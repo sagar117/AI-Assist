@@ -521,5 +521,83 @@
     });
   })();
   </script>
+
+<script>
+  (function(){
+    const $ = id => document.getElementById(id);
+    function logUI(msg){
+      const el = $('log');
+      if (el) el.textContent += (msg + '\n');
+      console.log(msg);
+    }
+  
+    // --- Chat open/close ---
+    function openChat(){
+      const modal = $('chatModal');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      modal.setAttribute('aria-hidden','false');
+      playGreetingAndStart();
+    }
+    function closeChat(){
+      const modal = $('chatModal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+      modal.setAttribute('aria-hidden','true');
+      const stop = $('stop'); if (stop) stop.click();
+    }
+  
+    // --- Kick off TTS then mic ---
+    async function playGreetingAndStart(){
+      const player = $('player');
+      const greetText = "Hi! I’m your Valeo Assistant. How can I help today?";
+      try{
+        const res = await fetch('/api/tts?text=' + encodeURIComponent(greetText));
+        const data = await res.json();
+        if (!data || !data.audioBase64) throw new Error('No audio from /api/tts');
+  
+        if (player){
+          player.src = `data:${data.audioMime || 'audio/mpeg'};base64,${data.audioBase64}`;
+          // Try to start mic quickly (user gesture window), then also after greeting
+          setTimeout(startListening, 120);   // early attempt to satisfy getUserMedia gesture
+          player.play().catch(()=>{ /* ignore autoplay issues */ });
+          player.onended = () => startListening();
+          setTimeout(startListening, 3000);  // final fallback
+        } else {
+          startListening();
+        }
+      }catch(e){
+        logUI('Greeting TTS failed: ' + e.message);
+        startListening();
+      }
+    }
+  
+    // --- Trigger existing app.js logic via hidden Start button or hook ---
+    function startListening(){
+      const startBtn = $('start');
+      if (startBtn){
+        // force-enable and click; app.js should already have the handler bound
+        startBtn.disabled = false;
+        startBtn.click();
+        logUI('🎙️ Mic start triggered from index.html');
+        return;
+      }
+      if (typeof window.VALEO_ON_OPEN === 'function'){
+        try { window.VALEO_ON_OPEN(); logUI('🎙️ Started via VALEO_ON_OPEN'); return; } catch(e){}
+      }
+      logUI('⚠️ No start hook found.');
+    }
+  
+    // Bind FAB and Close buttons
+    window.addEventListener('DOMContentLoaded', () => {
+      const fab = $('fab');
+      const close = $('closeChat');
+      if (fab) fab.onclick = openChat;
+      if (close) close.onclick = closeChat;
+    });
+  })();
+  </script>
+
+
 </body>
 </html>
