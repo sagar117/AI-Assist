@@ -284,6 +284,11 @@
       "role": "user",
       "content": "The price of long test.",
       "ts": 1756733818166
+    },
+    {
+      "role": "assistant",
+      "content": "The YPO Longevity Blood Test is priced at AED 1099. If you would like to proceed with booking this test, please provide your area and preferred time for the appointment.",
+      "ts": 1756733823522
     }
   ]
 }
