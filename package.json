@@ -7,7 +7,8 @@
   "engines": { "node": ">=18.17" },
   "scripts": {
     "start": "node server.js",
-    "dev": "vercel dev",
+    "dev": "npx vercel dev",
+    "deploy": "npx vercel --prod"
     "build": "node -e \"console.log('No build step for server app')\"",
     "postinstall": "node -e \"require('fs').mkdirSync('prompts',{recursive:true}); if(!require('fs').existsSync('prompts/default.txt')) require('fs').writeFileSync('prompts/default.txt','You are Valeo Assistant.');\""
   },
