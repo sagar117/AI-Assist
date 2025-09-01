@@ -2,7 +2,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const DB_PATH = path.join(__dirname, 'memory.json');
+// Use /tmp directory for Vercel serverless environment
+const DB_PATH = path.join('/tmp', 'memory.json');
 
 function loadDB() {
   try {

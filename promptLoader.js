@@ -2,7 +2,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const PROMPTS_DIR = path.join(__dirname, 'prompts');
+// Use /tmp directory for Vercel serverless environment
+const PROMPTS_DIR = path.join('/tmp', 'prompts');
 const DEFAULT_NAME = 'default';
 const DEFAULT_TEXT = 'You are a concise, helpful voice assistant. Keep answers short, factual, and follow up with a clarifying question when useful.';
 
