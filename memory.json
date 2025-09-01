@@ -1,0 +1,284 @@
+{
+  "demo-user-1": [
+    {
+      "role": "assistant",
+      "content": "I didn't catch that. Could you try again?",
+      "ts": 1756722019994
+    },
+    {
+      "role": "user",
+      "content": "Mah is 18.",
+      "ts": 1756722027879
+    },
+    {
+      "role": "assistant",
+      "content": "Got it! Mah is 18 years old. Is there something specific you would like to know about Mah?",
+      "ts": 1756722028822
+    },
+    {
+      "role": "user",
+      "content": "My heart is hurting.",
+      "ts": 1756722040154
+    },
+    {
+      "role": "assistant",
+      "content": "I'm sorry to hear that. Are you experiencing physical pain, or is it emotional distress?",
+      "ts": 1756722041539
+    },
+    {
+      "role": "user",
+      "content": "Distress.",
+      "ts": 1756722050648
+    },
+    {
+      "role": "assistant",
+      "content": "I'm here to help. Can you share what’s causing your emotional distress?",
+      "ts": 1756722051321
+    },
+    {
+      "role": "assistant",
+      "content": "I didn't catch that. Could you try again?",
+      "ts": 1756722058306
+    },
+    {
+      "role": "user",
+      "content": "So I think my ratio is a little bit.",
+      "ts": 1756722489564
+    },
+    {
+      "role": "assistant",
+      "content": "I can only help you with your health and wellness. Would you like me to guide you on preventive care, book a lab test, or schedule a consultation?",
+      "ts": 1756722490430
+    },
+    {
+      "role": "user",
+      "content": "I think, my I think my sugar is high. Which day should I book?",
+      "ts": 1756722509508
+    },
+    {
+      "role": "assistant",
+      "content": "Based on what you described, would you like me to book a lab test for you to check your blood sugar levels? If so, I can help you choose a day that works best for you.",
+      "ts": 1756722510691
+    },
+    {
+      "role": "assistant",
+      "content": "I didn't catch that. Could you try again?",
+      "ts": 1756722523765
+    },
+    {
+      "role": "user",
+      "content": "Please... Yeah. Please help me.",
+      "ts": 1756722529764
+    },
+    {
+      "role": "assistant",
+      "content": "Of course! Let's get that lab test booked to check your blood sugar levels. What day works best for you?",
+      "ts": 1756722531895
+    },
+    {
+      "role": "user",
+      "content": "Which test should I book?",
+      "ts": 1756722750513
+    },
+    {
+      "role": "assistant",
+      "content": "For checking your blood sugar levels, I recommend booking a fasting blood glucose test or an HbA1c test. The fasting blood glucose test measures your sugar levels after fasting, while the HbA1c test gives an average of your blood sugar levels over the past few months. \n\nWould you like me to book one of these tests for you? If so, which one would you prefer?",
+      "ts": 1756722753063
+    },
+    {
+      "role": "user",
+      "content": "Can you tell me what are the latest I available label on value?",
+      "ts": 1756723152886
+    },
+    {
+      "role": "assistant",
+      "content": "I can only help you with your health and wellness. Would you like me to guide you on preventive care, book a lab test, or schedule a consultation?",
+      "ts": 1756723155118
+    },
+    {
+      "role": "user",
+      "content": "This raj, tell me what are the services that when you?",
+      "ts": 1756724277014
+    },
+    {
+      "role": "assistant",
+      "content": "Hello Raj! Valeo offers several services, including:\n\n1. **Blood Tests**: At-home sample collection, including the option to create your own test.\n2. **IV Therapy**: Delivered by licensed nurses, with options like Hydration, Immunity, VIP Wellness, Glutathione, NAC, and Hair Health.\n3. **Doctor on Call**: Home visits from licensed GPs for exams and treatment plans.\n4. **Injection Administration**: Nurse visits for medication administration, including GLP-1 support.\n5. **Supplements**: Quality health supplements available for purchase.\n\nIf you're interested in any specific service or need to book something, just let me know!",
+      "ts": 1756724279871
+    },
+    {
+      "role": "assistant",
+      "content": "I didn't catch that. Could you try again?",
+      "ts": 1756724290401
+    },
+    {
+      "role": "assistant",
+      "content": "I didn't catch that. Could you try again?",
+      "ts": 1756724293555
+    },
+    {
+      "role": "user",
+      "content": "How many are available on value?",
+      "ts": 1756724478171
+    },
+    {
+      "role": "assistant",
+      "content": "I can only help you with your health and wellness. Would you like me to guide you on preventive care, book a lab test, or schedule a consultation?",
+      "ts": 1756724479197
+    },
+    {
+      "role": "assistant",
+      "content": "I didn't catch that. Could you try again?",
+      "ts": 1756724490699
+    },
+    {
+      "role": "user",
+      "content": "Lab test.",
+      "ts": 1756724497928
+    },
+    {
+      "role": "assistant",
+      "content": "I can arrange at-home sample collection for lab tests. Which tests do you need, and when would you like to schedule it? If you're unsure, I can suggest common panels. Please also provide your full name, phone number, and area.",
+      "ts": 1756724499055
+    },
+    {
+      "role": "user",
+      "content": "Iv therapy.",
+      "ts": 1756724516100
+    },
+    {
+      "role": "assistant",
+      "content": "We can send a DHA-licensed nurse for an IV drip at home. Which area are you in, and what time works for you today? Also, please let me know your goal for the IV therapy (e.g., hydration, immunity, etc.) and if you have any contraindications.",
+      "ts": 1756724518213
+    },
+    {
+      "role": "user",
+      "content": "I'm in Bo Khalifa.",
+      "ts": 1756724535165
+    },
+    {
+      "role": "assistant",
+      "content": "Thank you for the information. What time works for you today for the IV therapy? Also, please let me know your goal for the IV drip (e.g., hydration, immunity, etc.) and if you have any contraindications.",
+      "ts": 1756724536915
+    },
+    {
+      "role": "user",
+      "content": "Will. I think I'm have to taste few of my vitamins.",
+      "ts": 1756726940618
+    },
+    {
+      "role": "assistant",
+      "content": "It sounds like you might be interested in IV therapy for vitamin supplementation. Could you please confirm your preferred time for the appointment and specify which vitamins or goals you have in mind? Also, let me know if you have any contraindications.",
+      "ts": 1756726941864
+    },
+    {
+      "role": "user",
+      "content": "I want to taste a soda, sodium, potassium, and calcium, and I will be free on Monday afternoon.",
+      "ts": 1756726967068
+    },
+    {
+      "role": "assistant",
+      "content": "It seems like you're interested in an IV therapy session that includes sodium, potassium, and calcium. I can arrange that for you on Monday afternoon. \n\nCould you please provide your full name and phone number for the booking?",
+      "ts": 1756726968361
+    },
+    {
+      "role": "user",
+      "content": "In know my name because you already are access to Marie force.",
+      "ts": 1756726987160
+    },
+    {
+      "role": "assistant",
+      "content": "Thank you, Marie. I still need your phone number to complete the booking for the IV therapy on Monday afternoon. Could you please provide that?",
+      "ts": 1756726987977
+    },
+    {
+      "role": "user",
+      "content": "Each of the values lab test contains, calcium test?",
+      "ts": 1756727113987
+    },
+    {
+      "role": "assistant",
+      "content": "The values lab test typically includes various components, including calcium. If you're interested in a specific lab test that includes calcium, I can help you arrange that. Would you like me to book a lab test for you? If so, please let me know your preferred time and area.",
+      "ts": 1756727115629
+    },
+    {
+      "role": "user",
+      "content": "Paste.",
+      "ts": 1756727136886
+    },
+    {
+      "role": "assistant",
+      "content": "I can only help you with your health and wellness. Would you like me to guide you on preventive care, book a lab test, or schedule a consultation?",
+      "ts": 1756727138540
+    },
+    {
+      "role": "user",
+      "content": "What is the price of longevity test?",
+      "ts": 1756727912966
+    },
+    {
+      "role": "assistant",
+      "content": "The YPO Longevity Blood Test is priced at AED 1099. If you're interested in booking this test, please let me know your area and preferred time for the appointment.",
+      "ts": 1756727915341
+    },
+    {
+      "role": "user",
+      "content": "What are the price of monthly to test?",
+      "ts": 1756729029390
+    },
+    {
+      "role": "assistant",
+      "content": "I don’t have that detail yet. I’ll confirm with the team and update you. In the meantime, if you're interested in a specific lab test or service, please let me know!",
+      "ts": 1756729030747
+    },
+    {
+      "role": "user",
+      "content": "Of testing.",
+      "ts": 1756729044736
+    },
+    {
+      "role": "assistant",
+      "content": "I can only help you with your health and wellness. Would you like me to guide you on preventive care, book a lab test, or schedule a consultation?",
+      "ts": 1756729046329
+    },
+    {
+      "role": "user",
+      "content": "Is the price of long test?",
+      "ts": 1756729064752
+    },
+    {
+      "role": "assistant",
+      "content": "The YPO Longevity Blood Test is priced at AED 1099. If you're interested in booking this test, please provide your area and preferred time for the appointment.",
+      "ts": 1756729066306
+    },
+    {
+      "role": "user",
+      "content": "Should I perform based on my health data?",
+      "ts": 1756729086093
+    },
+    {
+      "role": "assistant",
+      "content": "I can help you with preventive health guidance. If you have specific health data or concerns, I can suggest relevant lab tests or consultations. Would you like me to book a lab test for you?",
+      "ts": 1756729087302
+    },
+    {
+      "role": "user",
+      "content": "Based on my profile, what test you suggest?",
+      "ts": 1756729659529
+    },
+    {
+      "role": "assistant",
+      "content": "Based on your profile, I suggest considering the following tests:\n\n1. **Advanced Female Blood Test**: This focuses on hormones and can provide insights relevant to PCOS.\n2. **Vitamins & Minerals Blood Test**: Given your low Vitamin D level, this test can help assess your overall nutrient status.\n3. **Complete Blood Count (CBC)**: A general health check that can provide valuable information about your overall health.\n\nWould you like me to book one of these tests for you? If so, please provide your area and preferred time for the appointment.",
+      "ts": 1756729662044
+    },
+    {
+      "role": "user",
+      "content": "Is the price of long reduced?",
+      "ts": 1756730954201
+    },
+    {
+      "role": "assistant",
+      "content": "The YPO Longevity Blood Test is priced at AED 1099. I don't have any current promotions for this specific test. If you're interested in booking it, please let me know your area and preferred time for the appointment!",
+      "ts": 1756730956613
+    }
+  ]
+}
