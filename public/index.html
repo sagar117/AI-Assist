@@ -1,570 +1,438 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Valeo Care — Voice Chatbot</title>
   <style>
-    :root{
-      --primary:#ffb900;
-      --bg:#f6f7f9;
-      --phone:#ffffff;
-      --text:#1f2328;
-      --muted:#6b7280;
-      --ring: rgba(255,185,0,0.35);
-      --green:#16a34a;
-      --danger:#ef4444;
+    :root {
+      --primary: #ffb900;
+      --bg: #ffffff;
+      --text: #1f2328;
+      --muted: #6b7280;
+      --ring: rgba(255, 185, 0, 0.35);
     }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, Noto Sans, "Apple Color Emoji","Segoe UI Emoji";
+
+    * {
+      box-sizing: border-box
+    }
+
+    html,
+    body {
+      height: 100%
+    }
+
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, Noto Sans, "Apple Color Emoji", "Segoe UI Emoji";
       background: var(--bg);
       color: var(--text);
     }
 
-    /* Top bar + profile button (stays above overlays) */
-    .app-header{
+    .app-header {
       background: var(--primary);
-      color:#000;
-      padding:16px 20px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      position:sticky;
-      top:0; z-index:10;
+      color: #000;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
-    .brand{ font-weight:800; letter-spacing:.2px; }
-    .header-actions{
-      position: fixed; top: 12px; right: 20px; z-index: 70;
-      display:flex; align-items:center; gap:8px;
-    }
-    .icon-btn{
-      background: rgba(0,0,0,0.08);
-      border:none;border-radius:10px;
-      width:32px;height:32px;cursor:pointer;
-      display:flex; align-items:center; justify-content:center;
-    }
-    .icon-btn:focus { outline: 2px solid var(--text); outline-offset: 2px; }
-    .icon-btn svg { width: 18px; height: 18px; display: block; }
 
-    /* ===== Phone mock ===== */
-    .stage{ display:grid; place-items:center; padding:24px; }
-    .phone{
-      width: 420px; max-width: 92vw;
-      height: 700px;                 /* increased length */
-      background: var(--phone);
-      border-radius: 36px;
-      border: 1px solid #e5e7eb;
-      box-shadow: 0 24px 60px rgba(0,0,0,.15), 0 4px 16px rgba(0,0,0,.08);
-      position: relative;
+    .brand {
+      font-weight: 800;
+      letter-spacing: .2px;
+    }
+
+    /* top-right profile button above overlays */
+    .header-actions {
+      position: fixed;
+      top: 12px;
+      right: 20px;
+      z-index: 70;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      background: rgba(0, 0, 0, 0.08);
+      border: none;
+      border-radius: 10px;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon-btn:focus {
+      outline: 2px solid var(--text);
+      outline-offset: 2px;
+    }
+
+    .icon-btn svg {
+      width: 18px;
+      height: 18px;
+      display: block;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+
+    h1 {
+      margin: 8px 0 4px 0
+    }
+
+    .sub {
+      color: var(--muted);
+      margin: 0 0 20px 0
+    }
+
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      border: 1px solid #eee;
+      border-radius: 16px;
+      padding: 16px;
+      background: #fff;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      cursor: pointer;
+      transition: transform .08s ease, box-shadow .08s ease, border-color .08s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+    }
+
+    .card.selected {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px var(--ring);
+    }
+
+    .pill {
+      display: inline-flex;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      align-items: center;
+      justify-content: center;
+      background: var(--primary);
+      color: #000;
+      font-weight: 700;
+    }
+
+    .title {
+      font-weight: 700
+    }
+
+    .desc {
+      font-size: 14px;
+      color: var(--muted)
+    }
+
+    .selection {
+      margin-top: 14px;
+      color: #111
+    }
+
+    .fab {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      background: var(--primary);
+      color: #000;
+      border: none;
+      border-radius: 999px;
+      padding: 14px 18px;
+      font-weight: 700;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
+      cursor: pointer;
+    }
+
+    .fab:active {
+      transform: translateY(1px);
+    }
+
+    .modal.hidden {
+      display: none
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.32);
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+      padding: 20px;
+      z-index: 50;
+    }
+
+    .modal-content {
+      width: 420px;
+      max-width: 95vw;
+      max-height: 90vh;
+      background: #fff;
+      border-radius: 16px;
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
     }
-    .notch{
-      position:absolute; top:10px; left:50%; transform:translateX(-50%);
-      width:180px; height:26px; background:#000; border-radius:14px;
-    }
-    .status{
-      height: 44px; display:flex; align-items:center; justify-content:space-between;
-      padding: 0 16px; font-size:12px; color:#111;
-    }
-    .status .dots{ display:flex; gap:4px; }
-    .status .dot{ width:6px; height:6px; border-radius:50%; background:#111; opacity:.85; }
 
-    .phone-header{
+    .modal-header {
       background: var(--primary);
-      padding: 12px 14px 16px 14px;
-    }
-    .search-row{ display:flex; gap:10px; align-items:center; }
-    .search{
-      flex:1; background:#fff; border:1px solid #e5e7eb; border-radius:10px;
-      padding: 10px 12px; font-size:14px;
-    }
-    .hamburger{
-      width:36px; height:36px; border-radius:10px; background:#fff; border:1px solid #e5e7eb;
-      display:flex; align-items:center; justify-content:center;
-    }
-    .hamburger span{ width:16px; height:2px; background:#111; position:relative; display:block; }
-    .hamburger span::before,.hamburger span::after{ content:""; position:absolute; left:0; width:100%; height:100%; background:#111; }
-    .hamburger span::before{ top:-6px } .hamburger span::after{ top:6px }
-
-    .welcome{ padding: 10px 14px; font-weight:700; }
-    .welcome em{ font-style:normal; color:#0b65d1; }
-
-    /* Scrollable body inside the phone */
-    .phone-body{
-      position:absolute; left:0; right:0;
-      top: 120px;                      /* below header */
-      bottom: 72px;                    /* above tabs */
-      overflow: auto;
-      -webkit-overflow-scrolling: touch;
+      color: #000;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 800;
     }
 
-    /* Carousel */
-    .carousel{ padding: 0 12px; }
-    .slides{ display:flex; gap:12px; overflow:hidden; scroll-behavior:smooth; border-radius:16px; }
-    .slide{
-      min-width: calc(100% - 0px);
-      background:#f0f9ff;
-      border:1px solid #e5e7eb;
-      border-radius:16px; padding:14px;
-      display:flex; gap:12px; align-items:center;
+    .modal-body {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
-    .slide .cta{ background:#22c55e; color:#fff; border:none; padding:8px 10px; border-radius:8px; font-weight:700; cursor:pointer; }
-    .slide.weight{ background:#eef2ff; }
-    .slide.weight .badge{ background:var(--primary); color:#000; font-weight:800; border-radius:999px; padding:2px 8px; font-size:12px; }
-    .dots{ display:flex; gap:6px; justify-content:center; padding:8px 0 0 0; }
-    .dot{ width:8px; height:8px; border-radius:50%; background:#d1d5db; }
-    .dot.active{ background:#0b65d1; }
 
-    /* Tiles grid */
-    .tiles{ display:grid; grid-template-columns: repeat(2, 1fr); gap:12px; padding: 12px; }
-    .tile{
-      background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:12px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-      min-height: 120px; display:flex; flex-direction:column; justify-content:space-between;
-      cursor:pointer;
+    /* Ensure profile modal overlays the chat modal */
+    .modal-profile {
+      z-index: 80;
     }
-    .tile h4{ margin:0 0 6px 0; font-size:14px; }
-    .tile p{ margin:0; font-size:12px; color:var(--muted); }
-    .badge-red{ display:inline-block; color:#fff; background:var(--danger); font-weight:800; font-size:12px; border-radius:999px; padding:2px 8px; }
-    .badge-green{ display:inline-block; color:#fff; background:var(--green); font-weight:800; font-size:12px; border-radius:999px; padding:2px 8px; }
-    .tile .art{ height:34px; border-radius:10px; background:linear-gradient(135deg, #e2e8f0, #f8fafc); margin-top:8px; }
 
-    /* Bottom tab bar */
-    .tabs{
-      position:absolute; left:0; right:0; bottom:0;
-      background:#fff; border-top:1px solid #e5e7eb;
-      display:flex; justify-content:space-around; padding:10px 6px 12px;
-      z-index:2;
+    label {
+      font-size: 14px;
+      color: #374151
     }
-    .tab{ display:flex; flex-direction:column; align-items:center; gap:4px; font-size:11px; color:#6b7280; }
-    .tab.active{ color:#000; }
-    .tab .pill{ width:6px; height:6px; border-radius:999px; background:transparent; }
-    .tab.active .pill{ background: var(--primary); }
 
-    /* Assistant FAB INSIDE the phone */
-    .fab{
-      position: absolute; right: 16px; bottom: 90px;  /* sits above the tab bar */
-      background: var(--primary); color:#000;
-      border:none; border-radius: 999px; padding: 14px 18px; font-weight:700;
-      box-shadow: 0 10px 20px rgba(0,0,0,0.18); cursor:pointer; z-index:3;
+    select,
+    input,
+    button {
+      font: inherit;
     }
-    .fab:active{ transform: translateY(1px); }
 
-    /* Modals */
-    .modal.hidden{ display:none }
-    .modal{ position: fixed; inset: 0; background: rgba(0,0,0,0.32); display:flex; align-items:flex-end; justify-content:flex-end; padding: 20px; z-index: 50; }
-    .modal-content{ width: 420px; max-width: 95vw; max-height: 90vh; background: #fff; border-radius: 16px; overflow:hidden; display:flex; flex-direction:column; box-shadow: 0 12px 28px rgba(0,0,0,0.22); }
-    .modal-header{ background: var(--primary); color:#000; padding: 10px 12px; display:flex; align-items:center; justify-content:space-between; font-weight:800; }
-    .modal-body{ padding: 12px; display:flex; flex-direction:column; gap:10px; }
-    .modal-profile{ z-index: 80; }
+    select,
+    input {
+      padding: 8px 10px;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      width: 100%;
+    }
 
-    /* Chat internals */
-    label{font-size:14px;color:#374151}
-    select,input,button{ font: inherit; }
-    select,input{ padding:8px 10px; border:1px solid #e5e7eb; border-radius:10px; width:100%; }
-    .row{ display:flex; gap:8px; align-items:center; }
-    .row.stack{ flex-direction:column; align-items:stretch; }
-    .controls{ display:none; gap:8px; }/*HIDDEN*/
-    .btn{ padding:8px 12px; border-radius:10px; border:1px solid #e5e7eb; background:#fff; cursor:pointer; }
-    .btn.primary{ background: var(--primary); color:#000; border-color: var(--primary); }
-    #log{ white-space: pre-wrap; border:1px solid #eee; padding: 10px; min-height: 120px; border-radius: 10px; background:#fff; }
-    audio{ width:100% }
-    .hide{ display:none !important; }
+    .row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .row.stack {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .controls {
+      display: none;
+      gap: 8px;
+    }
+
+    /*HIDDEN*/
+    .btn {
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .btn.primary {
+      background: var(--primary);
+      color: #000;
+      border-color: var(--primary);
+    }
+
+    #log {
+      white-space: pre-wrap;
+      border: 1px solid #eee;
+      padding: 10px;
+      min-height: 120px;
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    audio {
+      width: 100%
+    }
+
+    /* Hide prompt, userId, and audio player in UI */
+    .hide {
+      display: none !important;
+    }
 
     /* Sample question chips */
-    .samples{ display:flex; gap:8px; flex-wrap:wrap; }
-    .chip{
+    .samples {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
       background: var(--primary);
-      color:#000;
-      border:none; border-radius: 999px;
-      padding: 6px 10px; font-size: 13px; cursor: pointer;
+      color: #000;
+      border: none;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    /* Assistant callout styles */
+    .assistant-callout {
+      margin-top: 16px;
+      border: 1px solid #eee;
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: #fff;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+      line-height: 1.4;
+    }
+
+    .assistant-callout .badge {
+      display: inline-block;
+      background: var(--primary);
+      color: #000;
+      font-weight: 700;
+      border-radius: 999px;
+      padding: 2px 8px;
+      margin-right: 8px;
+      font-size: 12px;
     }
   </style>
 </head>
+
 <body>
   <header class="app-header">
     <div class="brand">Valeo Care</div>
-    <div class="header-actions">
-      <button id="manageProfile" class="icon-btn" title="Manage Profile" aria-label="Manage Profile">
-        <!-- profile icon -->
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/>
-          <path d="M4 20c0-4.418 3.582-8 8-8s8 3.582 8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
+    <div class="header-actions"> <button id="manageProfile" class="icon-btn" title="Manage Profile"
+        aria-label="Manage Profile"> <!-- profile icon --> <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2" />
+          <path d="M4 20c0-4.418 3.582-8 8-8s8 3.582 8 8" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" />
+        </svg> </button> </div>
+  </header>
+  <main class="container">
+    <h1>Care at Home</h1> <!-- <p class="sub">Choose a service to get started.</p> -->
+    <div class="services-grid" id="services"> <button class="card service" data-service="Blood Test at Home"
+        aria-pressed="false"> <!-- <span class="pill">BT</span> -->
+        <div>
+          <div class="title">Blood Test at Home</div>
+          <div class="desc">Certified phlebotomist doorstep sample collection.</div>
+        </div>
+      </button>
+      <button class="card service" data-service="IV Therapy" aria-pressed="false"> <!-- <span class="pill">IV</span> -->
+        <div>
+          <div class="title">IV Therapy</div>
+          <div class="desc">Hydration, vitamins, and recovery protocols.</div>
+        </div>
+      </button>
+      <button class="card service" data-service="Weight Gain Program" aria-pressed="false">
+        <!-- <span class="pill">WG</span> -->
+        <div>
+          <div class="title">Weight Gain Program</div>
+          <div class="desc">Personalized diet + trainer-led progression.</div>
+        </div>
       </button>
     </div>
-  </header>
-
-  <!-- Phone-styled UI background -->
-  <section class="stage">
-    <div class="phone" aria-label="Mobile preview">
-      <div class="notch" aria-hidden="true"></div>
-      <div class="status">
-        <span>11:11</span>
-        <div class="dots" aria-hidden="true">
-          <div class="dot"></div><div class="dot"></div><div class="dot"></div>
-        </div>
-      </div>
-
-      <div class="phone-header">
-        <div class="search-row">
-          <input class="search" placeholder="Search blood test, supplement..." />
-          <div class="hamburger" aria-label="Menu"><span></span></div>
-        </div>
-      </div>
-
-      <div class="phone-body">
-        <div class="welcome">Hi <em>Sagar</em>, Welcome back</div>
-
-        <!-- Carousel -->
-        <div class="carousel">
-          <div id="slides" class="slides">
-            <div class="slide">
-              <div style="flex:1">
-                <div style="font-weight:800; font-size:16px;">Premium Longevity Program</div>
-                <div style="font-size:13px; color:var(--muted); margin:6px 0 10px;">
-                  Add healthy years to your life & improve longevity by up to 15%
-                </div>
-                <button class="cta">Know more</button>
-              </div>
-              <div class="art" style="flex:1; height:86px; border-radius:12px; background:linear-gradient(135deg,#dcfce7,#f0fdf4);"></div>
-            </div>
-
-            <div class="slide weight">
-              <div style="flex:1">
-                <div style="font-weight:800; font-size:16px;">Valeo’s Online GLP-1 <br/>Weight Loss Program</div>
-                <div style="margin:6px 0 10px;"><span class="badge">Lose up to 25%*</span></div>
-                <div style="font-size:12px; color:var(--muted)">Mounjaro • Wegovy • Ozempic • Rybelsus</div>
-              </div>
-              <div class="art" style="flex:1; height:86px; border-radius:12px; background:linear-gradient(135deg,#e0e7ff,#eef2ff);"></div>
-            </div>
-          </div>
-          <div class="dots" id="dots">
-            <div class="dot active"></div>
-            <div class="dot"></div>
-          </div>
-        </div>
-
-        <!-- Tiles -->
-        <div class="tiles" id="services">
-          <button class="tile service" data-service="Blood Test at Home" aria-pressed="false">
-            <div>
-              <h4>Blood test At-home</h4>
-              <span class="badge-red">Up to 50% OFF</span>
-            </div>
-            <div class="art" aria-hidden="true"></div>
-          </button>
-
-          <button class="tile service" data-service="Weight Loss Program" aria-pressed="false">
-            <div>
-              <h4>Weight Loss Program</h4>
-              <span class="badge-green">New</span>
-            </div>
-            <div class="art" aria-hidden="true"></div>
-          </button>
-
-          <button class="tile service" data-service="IV Therapy" aria-pressed="false">
-            <div>
-              <h4>IV Therapy</h4>
-              <p>Hydration & recovery</p>
-            </div>
-            <div class="art" aria-hidden="true"></div>
-          </button>
-
-          <button class="tile service" data-service="Newborn Care & Babysitting" aria-pressed="false">
-            <div>
-              <h4>Newborn Care & Babysitting</h4>
-              <p>At-home support</p>
-            </div>
-            <div class="art" aria-hidden="true"></div>
-          </button>
-        </div>
-      </div>
-
-      <!-- Inside-phone Assistant FAB -->
-      <button id="fab" class="fab">Valeo Assistant</button>
-
-      <!-- Bottom tabs -->
-      <nav class="tabs" aria-label="Primary">
-        <div class="tab"><div class="pill"></div><div>Services</div></div>
-        <div class="tab"><div class="pill"></div><div>Supplements</div></div>
-        <div class="tab active"><div class="pill"></div><div>Home</div></div>
-        <div class="tab"><div class="pill"></div><div>Results</div></div>
-        <div class="tab"><div class="pill"></div><div>Cart</div></div>
-      </nav>
-    </div>
-  </section>
-
+    <!-- Assistant info callout (below services) -->
+    <div class="assistant-callout" role="note" aria-label="Assistant information"> <span class="badge">Assistant</span>
+      Talk with your personal assistant for any health-related query, queries related to tests, lab reports, pricing &
+      discounts, or clarifications. Click the <strong>Valeo Assistant</strong> button to talk. </div>
+    <div id="selection" class="selection">Selected: none</div>
+  </main>
+  <button id="fab" class="fab">Valeo Assistant</button>
   <!-- Chat modal -->
   <div id="chatModal" class="modal hidden" aria-hidden="true">
     <div class="modal-content" role="dialog" aria-label="Valeo Assistant">
-      <div class="modal-header">
-        <span>Valeo Assistant</span>
-        <button id="closeChat" class="icon-btn" title="Close" aria-label="Close">×</button>
-      </div>
+      <div class="modal-header"> <span>Valeo Assistant</span> <button id="closeChat" class="icon-btn" title="Close"
+          aria-label="Close">×</button> </div>
       <div class="modal-body">
         <div class="row"><em id="greet">Hello! Say something when you’re ready.</em></div>
-        <div class="samples" aria-label="Sample questions">
-          <button class="chip sample-q" data-q="price of longevity test?">price of longevity test?</button>
-          <button class="chip sample-q" data-q="which test should I perform based on my health data?">which test should I perform based on my health data?</button>
-        </div>
-        <div class="row stack hide">
-          <label>Prompt</label>
-          <select id="prompt"></select>
-        </div>
-        <div class="row stack hide">
-          <label>User ID</label>
-          <input id="userId" value="demo-user-1" />
-        </div>
-        <div class="controls hide">
-          <button id="start" class="btn primary">Start Recording</button>
-          <button id="stop" class="btn" disabled>Stop &amp; Send</button>
-          <button id="clear" class="btn">Clear Memory</button>
-        </div>
-        <audio id="player" class="hide"></audio>
+        <!-- Sample questions -->
+        <div class="samples" aria-label="Sample questions"> <button class="chip sample-q"
+            data-q="price of longevity test?">price of longevity test?</button> <button class="chip sample-q"
+            data-q="which test should I perform based on my health data?">which test should I perform based on my health
+            data?</button> </div>
+        <!-- Hidden controls kept in DOM for logic -->
+        <div class="row stack hide"> <label>Prompt</label> <select id="prompt"></select> </div>
+        <div class="row stack hide"> <label>User ID</label> <input id="userId" value="demo-user-1" /> </div>
+        <div class="controls hide"> <button id="start" class="btn primary">Start Recording</button> <button id="stop"
+            class="btn" disabled>Stop &amp; Send</button> <button id="clear" class="btn">Clear Memory</button> </div>
+        <!-- Keep audio element but hide it so TTS works --> <audio id="player" class="hide"></audio>
         <div id="log"></div>
       </div>
     </div>
   </div>
-
   <!-- Profile modal -->
   <div id="profileModal" class="modal modal-profile hidden" aria-hidden="true" aria-label="Manage Profile">
     <div class="modal-content" role="dialog" aria-label="Manage Profile">
-      <div class="modal-header">
-        <span>Manage Profile</span>
-        <button id="closeProfile" class="icon-btn" title="Close" aria-label="Close">×</button>
-      </div>
+      <div class="modal-header"> <span>Manage Profile</span> <button id="closeProfile" class="icon-btn" title="Close"
+          aria-label="Close">×</button> </div>
       <div class="modal-body">
-        <div class="row stack"><label>User ID</label><input id="pf-userId" /></div>
-        <div class="row stack"><label>Name</label><input id="pf-name" /></div>
+        <div class="row stack"> <label>User ID</label> <input id="pf-userId" /> </div>
+        <div class="row stack"> <label>Name</label> <input id="pf-name" /> </div>
         <div class="row" style="gap:12px">
-          <div style="flex:1"><label>Age</label><input id="pf-age" type="number" min="0" /></div>
-          <div style="flex:1"><label>Sex</label><input id="pf-sex" placeholder="female/male/other" /></div>
+          <div style="flex:1"> <label>Age</label> <input id="pf-age" type="number" min="0" /> </div>
+          <div style="flex:1"> <label>Sex</label> <input id="pf-sex" placeholder="female/male/other" /> </div>
         </div>
-        <div class="row stack"><label>Goals (comma-separated)</label><input id="pf-goals" placeholder="weight loss, energy" /></div>
-        <div class="row stack"><label>Conditions (comma-separated)</label><input id="pf-conditions" placeholder="PCOS, hypertension" /></div>
-        <div class="row stack"><label>Medications (comma-separated)</label><input id="pf-meds" placeholder="metformin 500mg" /></div>
-        <div class="row stack"><label>Allergies (comma-separated)</label><input id="pf-allergies" placeholder="penicillin" /></div>
-        <div class="row stack"><label>Symptoms (comma-separated)</label><input id="pf-symptoms" placeholder="fatigue, hair fall" /></div>
-        <div class="row stack">
-          <label>Recent Labs (JSON object)</label>
-          <textarea id="pf-labs" rows="4" style="width:100%; padding:8px; border:1px solid #e5e7eb; border-radius:10px">{}</textarea>
-        </div>
-        <div class="controls" style="display:flex; gap:8px;">
-          <button id="pf-save" class="btn primary">Save Profile</button>
-          <button id="pf-cancel" class="btn">Cancel</button>
-        </div>
-        <div style="font-size:12px; color:#6b7280; margin-top:8px;">
-          This profile is injected into your prompt via placeholders like <code>{{PROFILE}}</code> and <code>{{PROFILE_JSON}}</code>.
-        </div>
+        <div class="row stack"> <label>Goals (comma-separated)</label> <input id="pf-goals"
+            placeholder="weight loss, energy" /> </div>
+        <div class="row stack"> <label>Conditions (comma-separated)</label> <input id="pf-conditions"
+            placeholder="PCOS, hypertension" /> </div>
+        <div class="row stack"> <label>Medications (comma-separated)</label> <input id="pf-meds"
+            placeholder="metformin 500mg" /> </div>
+        <div class="row stack"> <label>Allergies (comma-separated)</label> <input id="pf-allergies"
+            placeholder="penicillin" /> </div>
+        <div class="row stack"> <label>Symptoms (comma-separated)</label> <input id="pf-symptoms"
+            placeholder="fatigue, hair fall" /> </div>
+        <div class="row stack"> <label>Recent Labs (JSON object)</label> <textarea id="pf-labs" rows="4"
+            style="width:100%; padding:8px; border:1px solid #e5e7eb; border-radius:10px">{}</textarea> </div>
+        <div class="controls" style="display:flex; gap:8px;"> <button id="pf-save" class="btn primary">Save
+            Profile</button> <button id="pf-cancel" class="btn">Cancel</button> </div>
+        <div style="font-size:12px; color:#6b7280; margin-top:8px;"> This profile is injected into your prompt via
+          placeholders like <code>{{PROFILE}}</code> and <code>{{PROFILE_JSON}}</code>. </div>
       </div>
     </div>
   </div>
-
   <script src="app.js"></script>
-
-  <!-- Inline: auto-greet (TTS) + start listening on chat open; profile modal helpers -->
-  <script>
-    (function(){
-      const $ = id => document.getElementById(id);
-    
-      // ---- Tunables (adjust if needed) ----
-      const RMS_SPEECH = 0.03;     // trigger "speaking" if above this
-      const RMS_SILENCE = 0.012;   // consider "silence" if below this
-      const MIN_SPEECH_MS = 250;   // need at least this much voiced audio
-      const END_SILENCE_MS = 900;  // stop after this much trailing silence
-      const HARD_TIMEOUT_MS = 12000;// safety stop even if silence not detected
-    
-      // ---- Internal state ----
-      let startedTurn = false;
-      let vad = { ac:null, src:null, analyser:null, raf:0, speaking:false,
-                  speechMs:0, silenceMs:0, t0:0, hardTimer:null, stream:null };
-      let playerMO = null;
-      let greetingSrc = null;
-    
-      function logUI(msg){ try{ (window.log||console.log)(msg); }catch(e){ console.log(msg); } const el=$('log'); if(el) el.textContent += msg+'\n'; }
-    
-      // Ensure prompt list exists (some app.js versions expect a value)
-      async function ensurePrompts(){
-        const sel = $('prompt'); if (!sel) return;
-        if (sel.options.length) return;
-        try{
-          const r = await fetch('/api/prompts', {cache:'no-store'}); const j = await r.json();
-          (j.prompts?.length? j.prompts : ['default']).forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
-        }catch{
-          const o=document.createElement('option'); o.value='default'; o.textContent='default'; sel.appendChild(o);
-        }
+  <!-- Inline script: open/close/save profile without touching app.js -->
+  <script> (function () {
+      const gid = id => document.getElementById(id); function safeLog(msg) { if (window.log) try { log(msg); } catch (e) { console.log(msg); } else console.log(msg); }
+      async function fetchProfile(userId) { try { const r = await fetch('/api/profile/' + encodeURIComponent(userId)); return r.ok ? await r.json() : null; } catch { return null; } }
+      function fillForm(p, userId) { gid('pf-userId').value = userId || (p && p.id) || (gid('userId')?.value?.trim() || 'riya'); gid('pf-name').value = p?.name || ''; gid('pf-age').value = p?.age ?? ''; gid('pf-sex').value = p?.sex || ''; gid('pf-goals').value = (p?.goals || []).join(', '); gid('pf-conditions').value = (p?.conditions || []).join(', '); gid('pf-meds').value = (p?.medications || []).join(', '); gid('pf-allergies').value = (p?.allergies || []).join(', '); gid('pf-symptoms').value = (p?.symptoms || []).join(', '); gid('pf-labs').value = JSON.stringify(p?.recent_labs || {}, null, 2); }
+      async function openProfile() { const modal = gid('profileModal'); const userId = (gid('userId')?.value || 'riya').trim(); const p = await fetchProfile(userId); fillForm(p, userId); modal.classList.remove('hidden'); modal.setAttribute('aria-hidden', 'false'); } function closeProfile() { const modal = gid('profileModal'); modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
+      async function saveProfile() {
+        const data = { id: (gid('pf-userId').value.trim() || 'riya'), name: gid('pf-name').value.trim(), age: Number(gid('pf-age').value) || null, sex: gid('pf-sex').value.trim() || null, goals: gid('pf-goals').value.split(',').map(s => s.trim()).filter(Boolean), conditions: gid('pf-conditions').value.split(',').map(s => s.trim()).filter(Boolean), medications: gid('pf-meds').value.split(',').map(s => s.trim()).filter(Boolean), allergies: gid('pf-allergies').value.split(',').map(s => s.trim()).filter(Boolean), symptoms: gid('pf-symptoms').value.split(',').map(s => s.trim()).filter(Boolean), recent_labs: {} }; try { data.recent_labs = JSON.parse(gid('pf-labs').value || '{}'); } catch (e) { safeLog('Recent Labs JSON is invalid.'); return; }
+        try { const r = await fetch('/api/profile/' + encodeURIComponent(data.id), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); if (!r.ok) { safeLog('Save failed: ' + (await r.text())); return; } const uidEl = gid('userId'); if (uidEl) uidEl.value = data.id; safeLog(' Profile saved for ' + data.id); closeProfile(); } catch (e) { safeLog('Save error: ' + e.message); }
       }
-    
-      // ----- Start/Stop via your hidden buttons (keeps bot logic intact) -----
-      function clickStart(){
-        if (startedTurn) return;
-        const b = $('start'); if (!b){ logUI('⚠️ #start not found'); return; }
-        b.disabled = false;
-        b.dispatchEvent(new PointerEvent('pointerdown', {bubbles:true}));
-        b.click();
-        startedTurn = true;
-        logUI('🎙️ Listening…');
-      }
-    
-      function clickStop(reason='auto'){
-        const b = $('stop'); if (!b){ logUI('⚠️ #stop not found'); return; }
-        b.click();
-        startedTurn = false;
-        logUI(`⏹️ Stopped (${reason})`);
-        stopVAD();
-      }
-    
-      // ----- VAD: monitor mic (separate from app.js) to decide when to stop -----
-      async function startVAD(){
-        stopVAD(); // clean if exists
-        try{
-          // separate lightweight monitor stream (app.js uses its own)
-          vad.stream = await navigator.mediaDevices.getUserMedia({
-            audio: { echoCancellation:true, noiseSuppression:true }
-          });
-          vad.ac = new (window.AudioContext || window.webkitAudioContext)();
-          vad.src = vad.ac.createMediaStreamSource(vad.stream);
-          vad.analyser = vad.ac.createAnalyser();
-          vad.analyser.fftSize = 2048;
-          vad.src.connect(vad.analyser);
-          const buf = new Float32Array(vad.analyser.fftSize);
-          vad.speaking=false; vad.speechMs=0; vad.silenceMs=0; vad.t0=performance.now();
-    
-          clearTimeout(vad.hardTimer);
-          vad.hardTimer = setTimeout(()=> clickStop('timeout'), HARD_TIMEOUT_MS);
-    
-          function tick(ts){
-            vad.analyser.getFloatTimeDomainData(buf);
-            // RMS
-            let sum=0; for (let i=0;i<buf.length;i++){ const v=buf[i]; sum += v*v; }
-            const rms = Math.sqrt(sum/buf.length);
-    
-            // state machine
-            if (!vad.speaking){
-              if (rms > RMS_SPEECH){
-                vad.speechMs += 16;
-                if (vad.speechMs > MIN_SPEECH_MS){ vad.speaking = true; vad.silenceMs = 0; }
-              } else {
-                vad.speechMs = Math.max(0, vad.speechMs - 32);
-              }
-            } else {
-              if (rms < RMS_SILENCE){
-                vad.silenceMs += 16;
-                if (vad.silenceMs >= END_SILENCE_MS){
-                  clickStop('silence');
-                  return; // stop loop
-                }
-              } else {
-                vad.silenceMs = Math.max(0, vad.silenceMs - 16);
-              }
-            }
-    
-            vad.raf = requestAnimationFrame(tick);
-          }
-          vad.raf = requestAnimationFrame(tick);
-          logUI('🧠 VAD armed');
-        }catch(e){
-          logUI('VAD error: ' + e.message);
-          // fallback: hard stop only
-          clearTimeout(vad.hardTimer);
-          vad.hardTimer = setTimeout(()=> clickStop('timeout'), HARD_TIMEOUT_MS);
-        }
-      }
-    
-      function stopVAD(){
-        if (vad.raf) { cancelAnimationFrame(vad.raf); vad.raf = 0; }
-        if (vad.hardTimer) { clearTimeout(vad.hardTimer); vad.hardTimer=null; }
-        try{ vad.stream?.getTracks()?.forEach(t=>t.stop()); }catch{}
-        try{ vad.ac && vad.ac.state !== 'closed' && vad.ac.close(); }catch{}
-        vad = { ac:null, src:null, analyser:null, raf:0, speaking:false, speechMs:0, silenceMs:0, t0:0, hardTimer:null, stream:null };
-      }
-    
-      // ----- Greeting then begin a turn -----
-      async function greetThenListen(){
-        const player = $('player');
-        const greet = "Hi! I’m your Valeo Assistant. How can I help today?";
-        try{
-          const r = await fetch('/api/tts?text=' + encodeURIComponent(greet));
-          const j = await r.json();
-          if (!j?.audioBase64) throw new Error('no audio');
-          greetingSrc = `data:${j.audioMime||'audio/mpeg'};base64,${j.audioBase64}`;
-          if (player){
-            player.src = greetingSrc;
-            player.onended = async () => {
-              clickStart();
-              await startVAD();
-            };
-            // fallback in case onended doesn't fire
-            setTimeout(async ()=>{
-              if (!startedTurn){ clickStart(); await startVAD(); }
-            }, 3500);
-            player.play().catch(async ()=>{
-              clickStart(); await startVAD();
-            });
-          } else {
-            clickStart(); await startVAD();
-          }
-        }catch(e){
-          logUI('Greeting TTS failed: '+e.message);
-          clickStart(); await startVAD();
-        }
-      }
-    
-      // ----- Open/Close chat -----
-      function openChat(){
-        const m = $('chatModal'); if (!m) return;
-        m.classList.remove('hidden'); m.setAttribute('aria-hidden','false');
-        startedTurn = false;
-        ensurePrompts().finally(()=> greetThenListen());
-      }
-      function closeChat(){
-        const m = $('chatModal'); if (!m) return;
-        if (startedTurn) clickStop('close');
-        stopVAD();
-        m.classList.add('hidden'); m.setAttribute('aria-hidden','true');
-      }
-    
-      // ----- Watch bot reply audio to start next turn automatically -----
-      function wireReplyCycle(){
-        const player = $('player'); if (!player) return;
-        if (playerMO) { playerMO.disconnect(); playerMO=null; }
-    
-        playerMO = new MutationObserver(() => {
-          const src = player.src||'';
-          if (!src.startsWith('data:audio')) return;
-          if (greetingSrc && src === greetingSrc) return; // ignore our greeting
-          logUI('🔊 Bot speaking');
-          player.onended = async () => {
-            logUI('🔁 Next turn');
-            clickStart();
-            await startVAD();
-          };
-        });
-        playerMO.observe(player, {attributes:true, attributeFilter:['src']});
-    
-        // In case src set before observer
-        player.addEventListener('loadedmetadata', () => {
-          const src = player.src||'';
-          if (src && src.startsWith('data:audio') && src !== greetingSrc){
-            player.onended = async ()=>{ clickStart(); await startVAD(); };
-          }
-        });
-      }
-    
-      // ----- Bind -----
-      window.addEventListener('DOMContentLoaded', () => {
-        const fab = $('fab'); const closeBtn = $('closeChat');
-        if (fab) fab.onclick = openChat;
-        if (closeBtn) closeBtn.onclick = closeChat;
-        wireReplyCycle();
-      });
-    })();
-    </script>
-    
-    
+      window.addEventListener('DOMContentLoaded', function () { const btn = gid('manageProfile'); const closeBtn = gid('closeProfile'); const cancelBtn = gid('pf-cancel'); const saveBtn = gid('pf-save'); if (btn) btn.onclick = openProfile; if (closeBtn) closeBtn.onclick = closeProfile; if (cancelBtn) cancelBtn.onclick = closeProfile; if (saveBtn) saveBtn.onclick = saveProfile; });
+    })(); </script>
 </body>
+
 </html>
