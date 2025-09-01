@@ -294,6 +294,11 @@
       "role": "user",
       "content": "Should I perform based on my health data?",
       "ts": 1756736310900
+    },
+    {
+      "role": "assistant",
+      "content": "Based on your health data, it would be beneficial to consider the following tests:\n\n1. **Vitamins & Minerals Blood Test**: To check your Vitamin D levels and overall nutrient status.\n2. **Advanced Female Blood Test**: This can provide insights into hormone levels, which may be relevant given your symptoms.\n3. **Complete Blood Count (CBC)**: A general health assessment.\n\nWould you like me to book one of these tests for you? If so, please provide your area and preferred time for the appointment.",
+      "ts": 1756736315302
     }
   ]
 }
