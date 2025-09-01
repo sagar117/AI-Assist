@@ -171,9 +171,9 @@ app.get('/api/debug', (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Voice bot running at http://localhost:${PORT}`);
-});
+// app.listen(PORT, () => {
+//   console.log(`Voice bot running at http://localhost:${PORT}`);
+// });
 
 
 app.get('/api/tts', async (req, res) => {
@@ -207,7 +207,7 @@ app.get('/api/tts', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Voice bot on http://0.0.0.0:${PORT}`);
 });
