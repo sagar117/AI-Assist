@@ -206,3 +206,9 @@ app.get('/api/tts', async (req, res) => {
     res.status(500).json({ error: String(e.message || e) });
   }
 });
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Voice bot on http://0.0.0.0:${PORT}`);
+});
+
