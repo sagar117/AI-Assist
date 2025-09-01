@@ -7,10 +7,13 @@
   <style>
     :root{
       --primary:#ffb900;
-      --bg:#ffffff;
+      --bg:#f6f7f9;
+      --phone:#ffffff;
       --text:#1f2328;
       --muted:#6b7280;
       --ring: rgba(255,185,0,0.35);
+      --green:#16a34a;
+      --danger:#ef4444;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -20,6 +23,8 @@
       background: var(--bg);
       color: var(--text);
     }
+
+    /* Top bar + profile button (stays above overlays) */
     .app-header{
       background: var(--primary);
       color:#000;
@@ -28,55 +33,135 @@
       align-items:center;
       justify-content:space-between;
       position:sticky;
-      top:0;
-      z-index:10;
+      top:0; z-index:10;
     }
     .brand{ font-weight:800; letter-spacing:.2px; }
-
-    /* top-right profile button above overlays */
     .header-actions{
-      position: fixed;
-      top: 12px;
-      right: 20px;
-      z-index: 70;
+      position: fixed; top: 12px; right: 20px; z-index: 70;
       display:flex; align-items:center; gap:8px;
     }
-    .icon-btn{ background: rgba(0,0,0,0.08); border:none;border-radius:10px; width:32px;height:32px;cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .icon-btn{
+      background: rgba(0,0,0,0.08);
+      border:none;border-radius:10px;
+      width:32px;height:32px;cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+    }
     .icon-btn:focus { outline: 2px solid var(--text); outline-offset: 2px; }
     .icon-btn svg { width: 18px; height: 18px; display: block; }
 
-    .container{ max-width: 960px; margin: 24px auto; padding: 0 16px; }
-    h1{margin:8px 0 4px 0}
-    .sub{color:var(--muted); margin:0 0 20px 0}
-    .services-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap:16px; }
-    .card{
-      border:1px solid #eee; border-radius:16px; padding:16px; background:#fff;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-      display:flex; gap:12px; align-items:center; cursor:pointer;
-      transition: transform .08s ease, box-shadow .08s ease, border-color .08s ease;
+    /* ===== Phone mock ===== */
+    .stage{ display:grid; place-items:center; padding:24px; }
+    .phone{
+      width: 420px; max-width: 92vw;
+      height: 700px;                 /* increased length */
+      background: var(--phone);
+      border-radius: 36px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 24px 60px rgba(0,0,0,.15), 0 4px 16px rgba(0,0,0,.08);
+      position: relative;
+      overflow: hidden;                /* real phones clip edges */
     }
-    .card:hover{ transform: translateY(-2px); box-shadow:0 6px 18px rgba(0,0,0,0.08); }
-    .card.selected{ border-color: var(--primary); box-shadow:0 0 0 4px var(--ring); }
-    .pill{ display:inline-flex; width:40px;height:40px; border-radius:50%; align-items:center;justify-content:center; background: var(--primary); color:#000; font-weight:700; }
-    .title{font-weight:700}
-    .desc{font-size:14px;color:var(--muted)}
-    .selection{margin-top:14px;color:#111}
+    .notch{
+      position:absolute; top:10px; left:50%; transform:translateX(-50%);
+      width:180px; height:26px; background:#000; border-radius:14px;
+    }
+    .status{
+      height: 44px; display:flex; align-items:center; justify-content:space-between;
+      padding: 0 16px; font-size:12px; color:#111;
+    }
+    .status .dots{ display:flex; gap:4px; }
+    .status .dot{ width:6px; height:6px; border-radius:50%; background:#111; opacity:.85; }
+
+    .phone-header{
+      background: var(--primary);
+      padding: 12px 14px 16px 14px;
+    }
+    .search-row{ display:flex; gap:10px; align-items:center; }
+    .search{
+      flex:1; background:#fff; border:1px solid #e5e7eb; border-radius:10px;
+      padding: 10px 12px; font-size:14px;
+    }
+    .hamburger{
+      width:36px; height:36px; border-radius:10px; background:#fff; border:1px solid #e5e7eb;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .hamburger span{ width:16px; height:2px; background:#111; position:relative; display:block; }
+    .hamburger span::before,.hamburger span::after{ content:""; position:absolute; left:0; width:100%; height:100%; background:#111; }
+    .hamburger span::before{ top:-6px } .hamburger span::after{ top:6px }
+
+    .welcome{ padding: 10px 14px; font-weight:700; }
+    .welcome em{ font-style:normal; color:#0b65d1; }
+
+    /* Scrollable body inside the phone */
+    .phone-body{
+      position:absolute; left:0; right:0;
+      top: 120px;                      /* below header */
+      bottom: 72px;                    /* above tabs */
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Carousel */
+    .carousel{ padding: 0 12px; }
+    .slides{ display:flex; gap:12px; overflow:hidden; scroll-behavior:smooth; border-radius:16px; }
+    .slide{
+      min-width: calc(100% - 0px);
+      background:#f0f9ff;
+      border:1px solid #e5e7eb;
+      border-radius:16px; padding:14px;
+      display:flex; gap:12px; align-items:center;
+    }
+    .slide .cta{ background:#22c55e; color:#fff; border:none; padding:8px 10px; border-radius:8px; font-weight:700; cursor:pointer; }
+    .slide.weight{ background:#eef2ff; }
+    .slide.weight .badge{ background:var(--primary); color:#000; font-weight:800; border-radius:999px; padding:2px 8px; font-size:12px; }
+    .dots{ display:flex; gap:6px; justify-content:center; padding:8px 0 0 0; }
+    .dot{ width:8px; height:8px; border-radius:50%; background:#d1d5db; }
+    .dot.active{ background:#0b65d1; }
+
+    /* Tiles grid */
+    .tiles{ display:grid; grid-template-columns: repeat(2, 1fr); gap:12px; padding: 12px; }
+    .tile{
+      background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+      min-height: 120px; display:flex; flex-direction:column; justify-content:space-between;
+      cursor:pointer;
+    }
+    .tile h4{ margin:0 0 6px 0; font-size:14px; }
+    .tile p{ margin:0; font-size:12px; color:var(--muted); }
+    .badge-red{ display:inline-block; color:#fff; background:var(--danger); font-weight:800; font-size:12px; border-radius:999px; padding:2px 8px; }
+    .badge-green{ display:inline-block; color:#fff; background:var(--green); font-weight:800; font-size:12px; border-radius:999px; padding:2px 8px; }
+    .tile .art{ height:34px; border-radius:10px; background:linear-gradient(135deg, #e2e8f0, #f8fafc); margin-top:8px; }
+
+    /* Bottom tab bar */
+    .tabs{
+      position:absolute; left:0; right:0; bottom:0;
+      background:#fff; border-top:1px solid #e5e7eb;
+      display:flex; justify-content:space-around; padding:10px 6px 12px;
+      z-index:2;
+    }
+    .tab{ display:flex; flex-direction:column; align-items:center; gap:4px; font-size:11px; color:#6b7280; }
+    .tab.active{ color:#000; }
+    .tab .pill{ width:6px; height:6px; border-radius:999px; background:transparent; }
+    .tab.active .pill{ background: var(--primary); }
+
+    /* Assistant FAB INSIDE the phone */
     .fab{
-      position: fixed; right: 20px; bottom: 20px; background: var(--primary); color:#000;
+      position: absolute; right: 16px; bottom: 90px;  /* sits above the tab bar */
+      background: var(--primary); color:#000;
       border:none; border-radius: 999px; padding: 14px 18px; font-weight:700;
-      box-shadow: 0 10px 20px rgba(0,0,0,0.18); cursor:pointer;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.18); cursor:pointer; z-index:3;
     }
     .fab:active{ transform: translateY(1px); }
 
+    /* Modals */
     .modal.hidden{ display:none }
     .modal{ position: fixed; inset: 0; background: rgba(0,0,0,0.32); display:flex; align-items:flex-end; justify-content:flex-end; padding: 20px; z-index: 50; }
     .modal-content{ width: 420px; max-width: 95vw; max-height: 90vh; background: #fff; border-radius: 16px; overflow:hidden; display:flex; flex-direction:column; box-shadow: 0 12px 28px rgba(0,0,0,0.22); }
     .modal-header{ background: var(--primary); color:#000; padding: 10px 12px; display:flex; align-items:center; justify-content:space-between; font-weight:800; }
     .modal-body{ padding: 12px; display:flex; flex-direction:column; gap:10px; }
-
-    /* Ensure profile modal overlays the chat modal */
     .modal-profile{ z-index: 80; }
 
+    /* Chat internals */
     label{font-size:14px;color:#374151}
     select,input,button{ font: inherit; }
     select,input{ padding:8px 10px; border:1px solid #e5e7eb; border-radius:10px; width:100%; }
@@ -87,8 +172,6 @@
     .btn.primary{ background: var(--primary); color:#000; border-color: var(--primary); }
     #log{ white-space: pre-wrap; border:1px solid #eee; padding: 10px; min-height: 120px; border-radius: 10px; background:#fff; }
     audio{ width:100% }
-
-    /* Hide prompt, userId, and audio player in UI */
     .hide{ display:none !important; }
 
     /* Sample question chips */
@@ -96,32 +179,8 @@
     .chip{
       background: var(--primary);
       color:#000;
-      border:none;
-      border-radius: 999px;
-      padding: 6px 10px;
-      font-size: 13px;
-      cursor: pointer;
-    }
-
-    /* Assistant callout styles */
-    .assistant-callout{
-      margin-top:16px;
-      border:1px solid #eee;
-      border-radius:12px;
-      padding:12px 14px;
-      background:#fff;
-      box-shadow:0 2px 10px rgba(0,0,0,0.04);
-      line-height:1.4;
-    }
-    .assistant-callout .badge{
-      display:inline-block;
-      background:var(--primary);
-      color:#000;
-      font-weight:700;
-      border-radius:999px;
-      padding:2px 8px;
-      margin-right:8px;
-      font-size:12px;
+      border:none; border-radius: 999px;
+      padding: 6px 10px; font-size: 13px; cursor: pointer;
     }
   </style>
 </head>
@@ -139,46 +198,105 @@
     </div>
   </header>
 
-  <main class="container">
-    <h1>Care at Home</h1>
-    <!-- <p class="sub">Choose a service to get started.</p> -->
-
-    <div class="services-grid" id="services">
-      <button class="card service" data-service="Blood Test at Home" aria-pressed="false">
-        <!-- <span class="pill">BT</span> -->
-        <div>
-          <div class="title">Blood Test at Home</div>
-          <div class="desc">Certified phlebotomist doorstep sample collection.</div>
+  <!-- Phone-styled UI background -->
+  <section class="stage">
+    <div class="phone" aria-label="Mobile preview">
+      <div class="notch" aria-hidden="true"></div>
+      <div class="status">
+        <span>11:11</span>
+        <div class="dots" aria-hidden="true">
+          <div class="dot"></div><div class="dot"></div><div class="dot"></div>
         </div>
-      </button>
+      </div>
 
-      <button class="card service" data-service="IV Therapy" aria-pressed="false">
-        <!-- <span class="pill">IV</span> -->
-        <div>
-          <div class="title">IV Therapy</div>
-          <div class="desc">Hydration, vitamins, and recovery protocols.</div>
+      <div class="phone-header">
+        <div class="search-row">
+          <input class="search" placeholder="Search blood test, supplement..." />
+          <div class="hamburger" aria-label="Menu"><span></span></div>
         </div>
-      </button>
+      </div>
 
-      <button class="card service" data-service="Weight Gain Program" aria-pressed="false">
-        <!-- <span class="pill">WG</span> -->
-        <div>
-          <div class="title">Weight Gain Program</div>
-          <div class="desc">Personalized diet + trainer-led progression.</div>
+      <div class="phone-body">
+        <div class="welcome">Hi <em>Sagar</em>, Welcome back</div>
+
+        <!-- Carousel -->
+        <div class="carousel">
+          <div id="slides" class="slides">
+            <div class="slide">
+              <div style="flex:1">
+                <div style="font-weight:800; font-size:16px;">Premium Longevity Program</div>
+                <div style="font-size:13px; color:var(--muted); margin:6px 0 10px;">
+                  Add healthy years to your life & improve longevity by up to 15%
+                </div>
+                <button class="cta">Know more</button>
+              </div>
+              <div class="art" style="flex:1; height:86px; border-radius:12px; background:linear-gradient(135deg,#dcfce7,#f0fdf4);"></div>
+            </div>
+
+            <div class="slide weight">
+              <div style="flex:1">
+                <div style="font-weight:800; font-size:16px;">Valeo’s Online GLP-1 <br/>Weight Loss Program</div>
+                <div style="margin:6px 0 10px;"><span class="badge">Lose up to 25%*</span></div>
+                <div style="font-size:12px; color:var(--muted)">Mounjaro • Wegovy • Ozempic • Rybelsus</div>
+              </div>
+              <div class="art" style="flex:1; height:86px; border-radius:12px; background:linear-gradient(135deg,#e0e7ff,#eef2ff);"></div>
+            </div>
+          </div>
+          <div class="dots" id="dots">
+            <div class="dot active"></div>
+            <div class="dot"></div>
+          </div>
         </div>
-      </button>
+
+        <!-- Tiles -->
+        <div class="tiles" id="services">
+          <button class="tile service" data-service="Blood Test at Home" aria-pressed="false">
+            <div>
+              <h4>Blood test At-home</h4>
+              <span class="badge-red">Up to 50% OFF</span>
+            </div>
+            <div class="art" aria-hidden="true"></div>
+          </button>
+
+          <button class="tile service" data-service="Weight Loss Program" aria-pressed="false">
+            <div>
+              <h4>Weight Loss Program</h4>
+              <span class="badge-green">New</span>
+            </div>
+            <div class="art" aria-hidden="true"></div>
+          </button>
+
+          <button class="tile service" data-service="IV Therapy" aria-pressed="false">
+            <div>
+              <h4>IV Therapy</h4>
+              <p>Hydration & recovery</p>
+            </div>
+            <div class="art" aria-hidden="true"></div>
+          </button>
+
+          <button class="tile service" data-service="Newborn Care & Babysitting" aria-pressed="false">
+            <div>
+              <h4>Newborn Care & Babysitting</h4>
+              <p>At-home support</p>
+            </div>
+            <div class="art" aria-hidden="true"></div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Inside-phone Assistant FAB -->
+      <button id="fab" class="fab">Valeo Assistant</button>
+
+      <!-- Bottom tabs -->
+      <nav class="tabs" aria-label="Primary">
+        <div class="tab"><div class="pill"></div><div>Services</div></div>
+        <div class="tab"><div class="pill"></div><div>Supplements</div></div>
+        <div class="tab active"><div class="pill"></div><div>Home</div></div>
+        <div class="tab"><div class="pill"></div><div>Results</div></div>
+        <div class="tab"><div class="pill"></div><div>Cart</div></div>
+      </nav>
     </div>
-
-    <!-- Assistant info callout (below services) -->
-    <div class="assistant-callout" role="note" aria-label="Assistant information">
-      <span class="badge">Assistant</span>
-      Talk with your personal assistant for any health-related query, queries related to tests, lab reports, pricing & discounts, or clarifications. Click the <strong>Valeo Assistant</strong> button to talk.
-    </div>
-
-    <div id="selection" class="selection">Selected: none</div>
-  </main>
-
-  <button id="fab" class="fab">Valeo Assistant</button>
+  </section>
 
   <!-- Chat modal -->
   <div id="chatModal" class="modal hidden" aria-hidden="true">
@@ -189,33 +307,24 @@
       </div>
       <div class="modal-body">
         <div class="row"><em id="greet">Hello! Say something when you’re ready.</em></div>
-
-        <!-- Sample questions -->
         <div class="samples" aria-label="Sample questions">
           <button class="chip sample-q" data-q="price of longevity test?">price of longevity test?</button>
           <button class="chip sample-q" data-q="which test should I perform based on my health data?">which test should I perform based on my health data?</button>
         </div>
-
-        <!-- Hidden controls kept in DOM for logic -->
         <div class="row stack hide">
           <label>Prompt</label>
           <select id="prompt"></select>
         </div>
-
         <div class="row stack hide">
           <label>User ID</label>
           <input id="userId" value="demo-user-1" />
         </div>
-
         <div class="controls hide">
           <button id="start" class="btn primary">Start Recording</button>
           <button id="stop" class="btn" disabled>Stop &amp; Send</button>
           <button id="clear" class="btn">Clear Memory</button>
         </div>
-
-        <!-- Keep audio element but hide it so TTS works -->
         <audio id="player" class="hide"></audio>
-
         <div id="log"></div>
       </div>
     </div>
@@ -229,44 +338,17 @@
         <button id="closeProfile" class="icon-btn" title="Close" aria-label="Close">×</button>
       </div>
       <div class="modal-body">
-        <div class="row stack">
-          <label>User ID</label>
-          <input id="pf-userId" />
-        </div>
-        <div class="row stack">
-          <label>Name</label>
-          <input id="pf-name" />
-        </div>
+        <div class="row stack"><label>User ID</label><input id="pf-userId" /></div>
+        <div class="row stack"><label>Name</label><input id="pf-name" /></div>
         <div class="row" style="gap:12px">
-          <div style="flex:1">
-            <label>Age</label>
-            <input id="pf-age" type="number" min="0" />
-          </div>
-          <div style="flex:1">
-            <label>Sex</label>
-            <input id="pf-sex" placeholder="female/male/other" />
-          </div>
+          <div style="flex:1"><label>Age</label><input id="pf-age" type="number" min="0" /></div>
+          <div style="flex:1"><label>Sex</label><input id="pf-sex" placeholder="female/male/other" /></div>
         </div>
-        <div class="row stack">
-          <label>Goals (comma-separated)</label>
-          <input id="pf-goals" placeholder="weight loss, energy" />
-        </div>
-        <div class="row stack">
-          <label>Conditions (comma-separated)</label>
-          <input id="pf-conditions" placeholder="PCOS, hypertension" />
-        </div>
-        <div class="row stack">
-          <label>Medications (comma-separated)</label>
-          <input id="pf-meds" placeholder="metformin 500mg" />
-        </div>
-        <div class="row stack">
-          <label>Allergies (comma-separated)</label>
-          <input id="pf-allergies" placeholder="penicillin" />
-        </div>
-        <div class="row stack">
-          <label>Symptoms (comma-separated)</label>
-          <input id="pf-symptoms" placeholder="fatigue, hair fall" />
-        </div>
+        <div class="row stack"><label>Goals (comma-separated)</label><input id="pf-goals" placeholder="weight loss, energy" /></div>
+        <div class="row stack"><label>Conditions (comma-separated)</label><input id="pf-conditions" placeholder="PCOS, hypertension" /></div>
+        <div class="row stack"><label>Medications (comma-separated)</label><input id="pf-meds" placeholder="metformin 500mg" /></div>
+        <div class="row stack"><label>Allergies (comma-separated)</label><input id="pf-allergies" placeholder="penicillin" /></div>
+        <div class="row stack"><label>Symptoms (comma-separated)</label><input id="pf-symptoms" placeholder="fatigue, hair fall" /></div>
         <div class="row stack">
           <label>Recent Labs (JSON object)</label>
           <textarea id="pf-labs" rows="4" style="width:100%; padding:8px; border:1px solid #e5e7eb; border-radius:10px">{}</textarea>
@@ -284,19 +366,16 @@
 
   <script src="app.js"></script>
 
-  <!-- Inline script: open/close/save profile without touching app.js -->
+  <!-- Inline profile modal + carousel + FAB open/close (no app.js edits) -->
   <script>
     (function(){
       const gid = id => document.getElementById(id);
       function safeLog(msg){ if (window.log) try{ log(msg); }catch(e){ console.log(msg); } else console.log(msg); }
 
       async function fetchProfile(userId){
-        try{
-          const r = await fetch('/api/profile/' + encodeURIComponent(userId));
-          return r.ok ? await r.json() : null;
-        }catch{ return null; }
+        try{ const r = await fetch('/api/profile/' + encodeURIComponent(userId)); return r.ok ? await r.json() : null; }
+        catch{ return null; }
       }
-
       function fillForm(p, userId){
         gid('pf-userId').value = userId || (p && p.id) || (gid('userId')?.value?.trim() || 'riya');
         gid('pf-name').value = p?.name || '';
@@ -309,7 +388,6 @@
         gid('pf-symptoms').value = (p?.symptoms || []).join(', ');
         gid('pf-labs').value = JSON.stringify(p?.recent_labs || {}, null, 2);
       }
-
       async function openProfile(){
         const modal = gid('profileModal');
         const userId = (gid('userId')?.value || 'riya').trim();
@@ -323,7 +401,6 @@
         modal.classList.add('hidden');
         modal.setAttribute('aria-hidden','true');
       }
-
       async function saveProfile(){
         const data = {
           id: (gid('pf-userId').value.trim() || 'riya'),
@@ -351,15 +428,47 @@
         }catch(e){ safeLog('Save error: ' + e.message); }
       }
 
+      // simple carousel dots toggle
+      (function(){
+        const slides = document.getElementById('slides');
+        const dots = Array.from(document.getElementById('dots').children);
+        let idx = 0; function set(i){ idx=i; slides.scrollTo({ left: slides.clientWidth * idx, behavior: 'smooth' }); dots.forEach((d,j)=> d.classList.toggle('active', j===idx)); }
+        set(0); setInterval(()=> set((idx+1)%dots.length), 3800);
+      })();
+
+      // FAB opens/closes chat
+      function openChat(){
+        const modal = gid('chatModal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden','false');
+        setTimeout(() => {
+          if (typeof window.VALEO_ON_OPEN === 'function') { try { window.VALEO_ON_OPEN(); return; } catch(e){} }
+          const startBtn = gid('start'); if (startBtn) startBtn.click();
+        }, 50);
+      }
+      function closeChat(){
+        const modal = gid('chatModal');
+        if (!modal) return;
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden','true');
+        const stopBtn = gid('stop'); if (stopBtn) stopBtn.click();
+      }
+
       window.addEventListener('DOMContentLoaded', function(){
-        const btn = gid('manageProfile');
-        const closeBtn = gid('closeProfile');
-        const cancelBtn = gid('pf-cancel');
-        const saveBtn = gid('pf-save');
+        const btn = document.getElementById('manageProfile');
+        const closeBtn = document.getElementById('closeProfile');
+        const cancelBtn = document.getElementById('pf-cancel');
+        const saveBtn = document.getElementById('pf-save');
         if (btn) btn.onclick = openProfile;
         if (closeBtn) closeBtn.onclick = closeProfile;
         if (cancelBtn) cancelBtn.onclick = closeProfile;
         if (saveBtn) saveBtn.onclick = saveProfile;
+
+        const fab = document.getElementById('fab');
+        const closeChatBtn = document.getElementById('closeChat');
+        if (fab) fab.onclick = openChat;
+        if (closeChatBtn) closeChatBtn.onclick = closeChat;
       });
     })();
   </script>
