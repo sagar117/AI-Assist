@@ -370,207 +370,201 @@
   <script>
     (function(){
       const $ = id => document.getElementById(id);
-      let started = false;
-      let stopTimer = null;
     
-      function safeLog(msg){ try{ (window.log||console.log)(msg); }catch(e){ console.log(msg); } }
+      // ---- Tunables (adjust if needed) ----
+      const RMS_SPEECH = 0.03;     // trigger "speaking" if above this
+      const RMS_SILENCE = 0.012;   // consider "silence" if below this
+      const MIN_SPEECH_MS = 250;   // need at least this much voiced audio
+      const END_SILENCE_MS = 900;  // stop after this much trailing silence
+      const HARD_TIMEOUT_MS = 12000;// safety stop even if silence not detected
     
-      async function ensurePromptsLoaded(){
-        const sel = $('prompt');
-        if (!sel) return;
+      // ---- Internal state ----
+      let startedTurn = false;
+      let vad = { ac:null, src:null, analyser:null, raf:0, speaking:false,
+                  speechMs:0, silenceMs:0, t0:0, hardTimer:null, stream:null };
+      let playerMO = null;
+      let greetingSrc = null;
+    
+      function logUI(msg){ try{ (window.log||console.log)(msg); }catch(e){ console.log(msg); } const el=$('log'); if(el) el.textContent += msg+'\n'; }
+    
+      // Ensure prompt list exists (some app.js versions expect a value)
+      async function ensurePrompts(){
+        const sel = $('prompt'); if (!sel) return;
         if (sel.options.length) return;
         try{
-          const r = await fetch('/api/prompts', {cache:'no-store'});
+          const r = await fetch('/api/prompts', {cache:'no-store'}); const j = await r.json();
+          (j.prompts?.length? j.prompts : ['default']).forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
+        }catch{
+          const o=document.createElement('option'); o.value='default'; o.textContent='default'; sel.appendChild(o);
+        }
+      }
+    
+      // ----- Start/Stop via your hidden buttons (keeps bot logic intact) -----
+      function clickStart(){
+        if (startedTurn) return;
+        const b = $('start'); if (!b){ logUI('⚠️ #start not found'); return; }
+        b.disabled = false;
+        b.dispatchEvent(new PointerEvent('pointerdown', {bubbles:true}));
+        b.click();
+        startedTurn = true;
+        logUI('🎙️ Listening…');
+      }
+    
+      function clickStop(reason='auto'){
+        const b = $('stop'); if (!b){ logUI('⚠️ #stop not found'); return; }
+        b.click();
+        startedTurn = false;
+        logUI(`⏹️ Stopped (${reason})`);
+        stopVAD();
+      }
+    
+      // ----- VAD: monitor mic (separate from app.js) to decide when to stop -----
+      async function startVAD(){
+        stopVAD(); // clean if exists
+        try{
+          // separate lightweight monitor stream (app.js uses its own)
+          vad.stream = await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation:true, noiseSuppression:true }
+          });
+          vad.ac = new (window.AudioContext || window.webkitAudioContext)();
+          vad.src = vad.ac.createMediaStreamSource(vad.stream);
+          vad.analyser = vad.ac.createAnalyser();
+          vad.analyser.fftSize = 2048;
+          vad.src.connect(vad.analyser);
+          const buf = new Float32Array(vad.analyser.fftSize);
+          vad.speaking=false; vad.speechMs=0; vad.silenceMs=0; vad.t0=performance.now();
+    
+          clearTimeout(vad.hardTimer);
+          vad.hardTimer = setTimeout(()=> clickStop('timeout'), HARD_TIMEOUT_MS);
+    
+          function tick(ts){
+            vad.analyser.getFloatTimeDomainData(buf);
+            // RMS
+            let sum=0; for (let i=0;i<buf.length;i++){ const v=buf[i]; sum += v*v; }
+            const rms = Math.sqrt(sum/buf.length);
+    
+            // state machine
+            if (!vad.speaking){
+              if (rms > RMS_SPEECH){
+                vad.speechMs += 16;
+                if (vad.speechMs > MIN_SPEECH_MS){ vad.speaking = true; vad.silenceMs = 0; }
+              } else {
+                vad.speechMs = Math.max(0, vad.speechMs - 32);
+              }
+            } else {
+              if (rms < RMS_SILENCE){
+                vad.silenceMs += 16;
+                if (vad.silenceMs >= END_SILENCE_MS){
+                  clickStop('silence');
+                  return; // stop loop
+                }
+              } else {
+                vad.silenceMs = Math.max(0, vad.silenceMs - 16);
+              }
+            }
+    
+            vad.raf = requestAnimationFrame(tick);
+          }
+          vad.raf = requestAnimationFrame(tick);
+          logUI('🧠 VAD armed');
+        }catch(e){
+          logUI('VAD error: ' + e.message);
+          // fallback: hard stop only
+          clearTimeout(vad.hardTimer);
+          vad.hardTimer = setTimeout(()=> clickStop('timeout'), HARD_TIMEOUT_MS);
+        }
+      }
+    
+      function stopVAD(){
+        if (vad.raf) { cancelAnimationFrame(vad.raf); vad.raf = 0; }
+        if (vad.hardTimer) { clearTimeout(vad.hardTimer); vad.hardTimer=null; }
+        try{ vad.stream?.getTracks()?.forEach(t=>t.stop()); }catch{}
+        try{ vad.ac && vad.ac.state !== 'closed' && vad.ac.close(); }catch{}
+        vad = { ac:null, src:null, analyser:null, raf:0, speaking:false, speechMs:0, silenceMs:0, t0:0, hardTimer:null, stream:null };
+      }
+    
+      // ----- Greeting then begin a turn -----
+      async function greetThenListen(){
+        const player = $('player');
+        const greet = "Hi! I’m your Valeo Assistant. How can I help today?";
+        try{
+          const r = await fetch('/api/tts?text=' + encodeURIComponent(greet));
           const j = await r.json();
-          const arr = (j.prompts && j.prompts.length) ? j.prompts : ['default'];
-          arr.forEach(name=>{
-            const opt = document.createElement('option');
-            opt.value = name; opt.textContent = name;
-            sel.appendChild(opt);
-          });
-        }catch(e){
-          const opt = document.createElement('option');
-          opt.value = 'default'; opt.textContent = 'default';
-          sel.appendChild(opt);
-          safeLog('Prompts load failed; using default.');
-        }
-      }
-    
-      // Ask for mic permission first (reduces getUserMedia failures), then click hidden Start
-      async function primeMicAndStartOnce(){
-        if (started) return;
-        started = true;
-    
-        try{
-          if (navigator.mediaDevices?.getUserMedia){
-            const s = await navigator.mediaDevices.getUserMedia({
-              audio: { echoCancellation:true, noiseSuppression:true }
-            });
-            // immediately stop; app.js will request its own stream
-            s.getTracks().forEach(t => t.stop());
-          }
-        }catch(e){
-          safeLog('Mic permission prompt error: ' + e.message);
-          // continue anyway; app.js may still succeed if permission already granted
-        }
-    
-        const startBtn = $('start');
-        if (startBtn){
-          startBtn.disabled = false;       // some apps keep it disabled until visible
-          // fire a pointer event to satisfy any "user gesture" checks
-          startBtn.dispatchEvent(new PointerEvent('pointerdown', {bubbles:true}));
-          startBtn.click();
-          safeLog('🎧 Listening… (started)');
-        } else if (typeof window.VALEO_ON_OPEN === 'function'){
-          try { window.VALEO_ON_OPEN(); safeLog('🎧 Listening… via VALEO_ON_OPEN'); } catch(e){}
-        } else {
-          safeLog('⚠️ No start hook found.');
-        }
-    
-        // Auto-stop after ~8s so app.js can send the blob (mirrors your manual flow)
-        clearTimeout(stopTimer);
-        stopTimer = setTimeout(() => {
-          const stopBtn = $('stop');
-          if (stopBtn){
-            stopBtn.click();
-            safeLog('⏹️ Auto-stop to send');
-          }
-        }, 8000);
-      }
-    
-      async function playGreetingThenListen(){
-        const greetText = "Hi! I’m your Valeo Assistant. How can I help today?";
-        try{
-          const res = await fetch('/api/tts?text=' + encodeURIComponent(greetText));
-          const data = await res.json();
-          if (!data || !data.audioBase64) throw new Error('No audio from /api/tts');
-          const player = $('player');
+          if (!j?.audioBase64) throw new Error('no audio');
+          greetingSrc = `data:${j.audioMime||'audio/mpeg'};base64,${j.audioBase64}`;
           if (player){
-            player.src = `data:${data.audioMime || 'audio/mpeg'};base64,${data.audioBase64}`;
-            // Start listening AFTER greeting to avoid recording TTS
-            player.onended = () => primeMicAndStartOnce();
-            // Fallback in case onended doesn’t fire
-            setTimeout(() => primeMicAndStartOnce(), 3600);
-            player.play().catch(() => primeMicAndStartOnce());
+            player.src = greetingSrc;
+            player.onended = async () => {
+              clickStart();
+              await startVAD();
+            };
+            // fallback in case onended doesn't fire
+            setTimeout(async ()=>{
+              if (!startedTurn){ clickStart(); await startVAD(); }
+            }, 3500);
+            player.play().catch(async ()=>{
+              clickStart(); await startVAD();
+            });
           } else {
-            primeMicAndStartOnce();
+            clickStart(); await startVAD();
           }
         }catch(e){
-          safeLog('Greeting TTS failed: ' + e.message);
-          primeMicAndStartOnce();
+          logUI('Greeting TTS failed: '+e.message);
+          clickStart(); await startVAD();
         }
       }
     
+      // ----- Open/Close chat -----
       function openChat(){
-        const modal = $('chatModal');
-        if (!modal) return;
-        // reset debounce each time you open
-        started = false;
-        modal.classList.remove('hidden');
-        modal.setAttribute('aria-hidden','false');
-        ensurePromptsLoaded().finally(() => setTimeout(playGreetingThenListen, 60));
+        const m = $('chatModal'); if (!m) return;
+        m.classList.remove('hidden'); m.setAttribute('aria-hidden','false');
+        startedTurn = false;
+        ensurePrompts().finally(()=> greetThenListen());
       }
-    
       function closeChat(){
-        const modal = $('chatModal');
-        if (!modal) return;
-        clearTimeout(stopTimer);
-        const stopBtn = $('stop'); if (stopBtn) stopBtn.click();
-        modal.classList.add('hidden');
-        modal.setAttribute('aria-hidden','true');
+        const m = $('chatModal'); if (!m) return;
+        if (startedTurn) clickStop('close');
+        stopVAD();
+        m.classList.add('hidden'); m.setAttribute('aria-hidden','true');
       }
     
-      // Basic carousel (unchanged)
-      (function(){
-        const slides = $('slides');
-        const dots = Array.from($('dots')?.children || []);
-        if (!slides || !dots.length) return;
-        let idx = 0;
-        function set(i){
-          idx=i;
-          slides.scrollTo({ left: slides.clientWidth * idx, behavior: 'smooth' });
-          dots.forEach((d,j)=> d.classList.toggle('active', j===idx));
-        }
-        set(0);
-        setInterval(()=> set((idx+1)%dots.length), 3800);
-      })();
+      // ----- Watch bot reply audio to start next turn automatically -----
+      function wireReplyCycle(){
+        const player = $('player'); if (!player) return;
+        if (playerMO) { playerMO.disconnect(); playerMO=null; }
     
-      // Profile modal helpers (unchanged)
-      async function fetchProfile(userId){
-        try{ const r = await fetch('/api/profile/' + encodeURIComponent(userId)); return r.ok ? await r.json() : null; }
-        catch{ return null; }
-      }
-      function fillForm(p, userId){
-        $('pf-userId').value = userId || (p && p.id) || ($('userId')?.value?.trim() || 'riya');
-        $('pf-name').value = p?.name || '';
-        $('pf-age').value = p?.age ?? '';
-        $('pf-sex').value = p?.sex || '';
-        $('pf-goals').value = (p?.goals || []).join(', ');
-        $('pf-conditions').value = (p?.conditions || []).join(', ');
-        $('pf-meds').value = (p?.medications || []).join(', ');
-        $('pf-allergies').value = (p?.allergies || []).join(', ');
-        $('pf-symptoms').value = (p?.symptoms || []).join(', ');
-        $('pf-labs').value = JSON.stringify(p?.recent_labs || {}, null, 2);
-      }
-      async function openProfile(){
-        const modal = $('profileModal');
-        const userId = ($('userId')?.value || 'riya').trim();
-        const p = await fetchProfile(userId);
-        fillForm(p, userId);
-        modal.classList.remove('hidden');
-        modal.setAttribute('aria-hidden','false');
-      }
-      function closeProfile(){
-        const modal = $('profileModal');
-        modal.classList.add('hidden');
-        modal.setAttribute('aria-hidden','true');
-      }
-      async function saveProfile(){
-        const data = {
-          id: ($('pf-userId').value.trim() || 'riya'),
-          name: $('pf-name').value.trim(),
-          age: Number($('pf-age').value) || null,
-          sex: $('pf-sex').value.trim() || null,
-          goals: $('pf-goals').value.split(',').map(s=>s.trim()).filter(Boolean),
-          conditions: $('pf-conditions').value.split(',').map(s=>s.trim()).filter(Boolean),
-          medications: $('pf-meds').value.split(',').map(s=>s.trim()).filter(Boolean),
-          allergies: $('pf-allergies').value.split(',').map(s=>s.trim()).filter(Boolean),
-          symptoms: $('pf-symptoms').value.split(',').map(s=>s.trim()).filter(Boolean),
-          recent_labs: {}
-        };
-        try { data.recent_labs = JSON.parse($('pf-labs').value || '{}'); }
-        catch(e){ safeLog('Recent Labs JSON is invalid.'); return; }
-        try{
-          const r = await fetch('/api/profile/' + encodeURIComponent(data.id), {
-            method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data)
-          });
-          if(!r.ok){ safeLog('Save failed: ' + (await r.text())); return; }
-          const uidEl = $('userId'); if (uidEl) uidEl.value = data.id;
-          safeLog('✅ Profile saved for ' + data.id);
-          closeProfile();
-        }catch(e){ safeLog('Save error: ' + e.message); }
+        playerMO = new MutationObserver(() => {
+          const src = player.src||'';
+          if (!src.startsWith('data:audio')) return;
+          if (greetingSrc && src === greetingSrc) return; // ignore our greeting
+          logUI('🔊 Bot speaking');
+          player.onended = async () => {
+            logUI('🔁 Next turn');
+            clickStart();
+            await startVAD();
+          };
+        });
+        playerMO.observe(player, {attributes:true, attributeFilter:['src']});
+    
+        // In case src set before observer
+        player.addEventListener('loadedmetadata', () => {
+          const src = player.src||'';
+          if (src && src.startsWith('data:audio') && src !== greetingSrc){
+            player.onended = async ()=>{ clickStart(); await startVAD(); };
+          }
+        });
       }
     
-      // Bind once DOM is ready
-      window.addEventListener('DOMContentLoaded', function(){
-        // FAB opens chat (greet → listen)
-        const fab = $('fab');
-        const closeChatBtn = $('closeChat');
+      // ----- Bind -----
+      window.addEventListener('DOMContentLoaded', () => {
+        const fab = $('fab'); const closeBtn = $('closeChat');
         if (fab) fab.onclick = openChat;
-        if (closeChatBtn) closeChatBtn.onclick = closeChat;
-    
-        // Profile
-        const btn = $('manageProfile');
-        const closeBtn = $('closeProfile');
-        const cancelBtn = $('pf-cancel');
-        const saveBtn = $('pf-save');
-        if (btn) btn.onclick = openProfile;
-        if (closeBtn) closeBtn.onclick = closeProfile;
-        if (cancelBtn) cancelBtn.onclick = closeProfile;
-        if (saveBtn) saveBtn.onclick = saveProfile;
+        if (closeBtn) closeBtn.onclick = closeChat;
+        wireReplyCycle();
       });
     })();
     </script>
+    
     
 </body>
 </html>
