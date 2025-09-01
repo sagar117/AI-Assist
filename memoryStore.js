@@ -7,13 +7,32 @@ const DB_PATH = path.join('/tmp', 'memory.json');
 
 function loadDB() {
   try {
-    return JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
+    // Try to load from /tmp first
+    if (fs.existsSync(DB_PATH)) {
+      return JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
+    }
+    
+    // If not in /tmp, try to load from project directory (for initial migration)
+    const projectPath = path.join(__dirname, 'memory.json');
+    if (fs.existsSync(projectPath)) {
+      const data = JSON.parse(fs.readFileSync(projectPath, 'utf8'));
+      // Save to /tmp for future use
+      saveDB(data);
+      return data;
+    }
+    
+    return {};
   } catch {
     return {};
   }
 }
+
 function saveDB(db) {
-  fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
+  try {
+    fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
+  } catch (error) {
+    console.error('Failed to save database:', error);
+  }
 }
 
 const db = loadDB();
