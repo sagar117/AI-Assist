@@ -59,7 +59,7 @@
       border: 1px solid #e5e7eb;
       box-shadow: 0 24px 60px rgba(0,0,0,.15), 0 4px 16px rgba(0,0,0,.08);
       position: relative;
-      overflow: hidden;                /* real phones clip edges */
+      overflow: hidden;
     }
     .notch{
       position:absolute; top:10px; left:50%; transform:translateX(-50%);
@@ -366,111 +366,160 @@
 
   <script src="app.js"></script>
 
-  <!-- Inline profile modal + carousel + FAB open/close (no app.js edits) -->
+  <!-- Inline: auto-greet (TTS) + start listening on chat open; profile modal helpers -->
   <script>
+  (function(){
+    const $ = id => document.getElementById(id);
+    function safeLog(msg){ if (window.log) try{ log(msg); }catch(e){ console.log(msg); } else console.log(msg); }
+
+    async function ensurePromptsLoaded(){
+      const sel = $('prompt');
+      if (!sel || sel.options.length) return;
+      try{
+        const r = await fetch('/api/prompts');
+        const j = await r.json();
+        (j.prompts || ['default']).forEach(name=>{
+          const opt = document.createElement('option');
+          opt.value = name; opt.textContent = name;
+          sel.appendChild(opt);
+        });
+      }catch(e){ safeLog('Error loading prompts: ' + e.message); }
+    }
+
+    function clickStart(){
+      const startBtn = $('start');
+      if (startBtn && !startBtn.disabled) { startBtn.click(); return; }
+      if (typeof window.VALEO_ON_OPEN === 'function') {
+        try { window.VALEO_ON_OPEN(); return; } catch(e){}
+      }
+      safeLog('No start handler found.');
+    }
+
+    async function playGreetingAndStart(){
+      const greetText = "Hi! I’m your Valeo Assistant. How can I help today?";
+      try{
+        const res = await fetch('/api/tts?text=' + encodeURIComponent(greetText));
+        const data = await res.json();
+        if (!data || !data.audioBase64) throw new Error('No audio from /api/tts');
+        const player = $('player');
+        if (player){
+          player.src = `data:${data.audioMime || 'audio/mpeg'};base64,${data.audioBase64}`;
+          player.play().catch(()=>{ /* autoplay might be blocked */ });
+          player.onended = () => { clickStart(); };
+          setTimeout(clickStart, 2500); // fallback
+        } else {
+          clickStart();
+        }
+      }catch(e){
+        safeLog('Greeting TTS failed: ' + e.message);
+        clickStart();
+      }
+    }
+
+    function openChat(){
+      const modal = $('chatModal');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      modal.setAttribute('aria-hidden','false');
+      ensurePromptsLoaded().finally(() => setTimeout(playGreetingAndStart, 60));
+    }
+
+    function closeChat(){
+      const modal = $('chatModal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+      modal.setAttribute('aria-hidden','true');
+      const stopBtn = $('stop'); if (stopBtn) stopBtn.click();
+    }
+
+    // Profile modal helpers
+    async function fetchProfile(userId){
+      try{ const r = await fetch('/api/profile/' + encodeURIComponent(userId)); return r.ok ? await r.json() : null; }
+      catch{ return null; }
+    }
+    function fillForm(p, userId){
+      $('pf-userId').value = userId || (p && p.id) || ($('userId')?.value?.trim() || 'riya');
+      $('pf-name').value = p?.name || '';
+      $('pf-age').value = p?.age ?? '';
+      $('pf-sex').value = p?.sex || '';
+      $('pf-goals').value = (p?.goals || []).join(', ');
+      $('pf-conditions').value = (p?.conditions || []).join(', ');
+      $('pf-meds').value = (p?.medications || []).join(', ');
+      $('pf-allergies').value = (p?.allergies || []).join(', ');
+      $('pf-symptoms').value = (p?.symptoms || []).join(', ');
+      $('pf-labs').value = JSON.stringify(p?.recent_labs || {}, null, 2);
+    }
+    async function openProfile(){
+      const modal = $('profileModal');
+      const userId = ($('userId')?.value || 'riya').trim();
+      const p = await fetchProfile(userId);
+      fillForm(p, userId);
+      modal.classList.remove('hidden');
+      modal.setAttribute('aria-hidden','false');
+    }
+    function closeProfile(){
+      const modal = $('profileModal');
+      modal.classList.add('hidden');
+      modal.setAttribute('aria-hidden','true');
+    }
+    async function saveProfile(){
+      const data = {
+        id: ($('pf-userId').value.trim() || 'riya'),
+        name: $('pf-name').value.trim(),
+        age: Number($('pf-age').value) || null,
+        sex: $('pf-sex').value.trim() || null,
+        goals: $('pf-goals').value.split(',').map(s=>s.trim()).filter(Boolean),
+        conditions: $('pf-conditions').value.split(',').map(s=>s.trim()).filter(Boolean),
+        medications: $('pf-meds').value.split(',').map(s=>s.trim()).filter(Boolean),
+        allergies: $('pf-allergies').value.split(',').map(s=>s.trim()).filter(Boolean),
+        symptoms: $('pf-symptoms').value.split(',').map(s=>s.trim()).filter(Boolean),
+        recent_labs: {}
+      };
+      try { data.recent_labs = JSON.parse($('pf-labs').value || '{}'); }
+      catch(e){ safeLog('Recent Labs JSON is invalid.'); return; }
+      try{
+        const r = await fetch('/api/profile/' + encodeURIComponent(data.id), {
+          method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data)
+        });
+        if(!r.ok){ safeLog('Save failed: ' + (await r.text())); return; }
+        const uidEl = $('userId'); if (uidEl) uidEl.value = data.id;
+        safeLog('✅ Profile saved for ' + data.id);
+        closeProfile();
+      }catch(e){ safeLog('Save error: ' + e.message); }
+    }
+
+    // Carousel dots
     (function(){
-      const gid = id => document.getElementById(id);
-      function safeLog(msg){ if (window.log) try{ log(msg); }catch(e){ console.log(msg); } else console.log(msg); }
-
-      async function fetchProfile(userId){
-        try{ const r = await fetch('/api/profile/' + encodeURIComponent(userId)); return r.ok ? await r.json() : null; }
-        catch{ return null; }
+      const slides = document.getElementById('slides');
+      const dots = Array.from(document.getElementById('dots')?.children || []);
+      if (!slides || !dots.length) return;
+      let idx = 0;
+      function set(i){
+        idx=i;
+        slides.scrollTo({ left: slides.clientWidth * idx, behavior: 'smooth' });
+        dots.forEach((d,j)=> d.classList.toggle('active', j===idx));
       }
-      function fillForm(p, userId){
-        gid('pf-userId').value = userId || (p && p.id) || (gid('userId')?.value?.trim() || 'riya');
-        gid('pf-name').value = p?.name || '';
-        gid('pf-age').value = p?.age ?? '';
-        gid('pf-sex').value = p?.sex || '';
-        gid('pf-goals').value = (p?.goals || []).join(', ');
-        gid('pf-conditions').value = (p?.conditions || []).join(', ');
-        gid('pf-meds').value = (p?.medications || []).join(', ');
-        gid('pf-allergies').value = (p?.allergies || []).join(', ');
-        gid('pf-symptoms').value = (p?.symptoms || []).join(', ');
-        gid('pf-labs').value = JSON.stringify(p?.recent_labs || {}, null, 2);
-      }
-      async function openProfile(){
-        const modal = gid('profileModal');
-        const userId = (gid('userId')?.value || 'riya').trim();
-        const p = await fetchProfile(userId);
-        fillForm(p, userId);
-        modal.classList.remove('hidden');
-        modal.setAttribute('aria-hidden','false');
-      }
-      function closeProfile(){
-        const modal = gid('profileModal');
-        modal.classList.add('hidden');
-        modal.setAttribute('aria-hidden','true');
-      }
-      async function saveProfile(){
-        const data = {
-          id: (gid('pf-userId').value.trim() || 'riya'),
-          name: gid('pf-name').value.trim(),
-          age: Number(gid('pf-age').value) || null,
-          sex: gid('pf-sex').value.trim() || null,
-          goals: gid('pf-goals').value.split(',').map(s=>s.trim()).filter(Boolean),
-          conditions: gid('pf-conditions').value.split(',').map(s=>s.trim()).filter(Boolean),
-          medications: gid('pf-meds').value.split(',').map(s=>s.trim()).filter(Boolean),
-          allergies: gid('pf-allergies').value.split(',').map(s=>s.trim()).filter(Boolean),
-          symptoms: gid('pf-symptoms').value.split(',').map(s=>s.trim()).filter(Boolean),
-          recent_labs: {}
-        };
-        try { data.recent_labs = JSON.parse(gid('pf-labs').value || '{}'); }
-        catch(e){ safeLog('Recent Labs JSON is invalid.'); return; }
-
-        try{
-          const r = await fetch('/api/profile/' + encodeURIComponent(data.id), {
-            method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data)
-          });
-          if(!r.ok){ safeLog('Save failed: ' + (await r.text())); return; }
-          const uidEl = gid('userId'); if (uidEl) uidEl.value = data.id;
-          safeLog('✅ Profile saved for ' + data.id);
-          closeProfile();
-        }catch(e){ safeLog('Save error: ' + e.message); }
-      }
-
-      // simple carousel dots toggle
-      (function(){
-        const slides = document.getElementById('slides');
-        const dots = Array.from(document.getElementById('dots').children);
-        let idx = 0; function set(i){ idx=i; slides.scrollTo({ left: slides.clientWidth * idx, behavior: 'smooth' }); dots.forEach((d,j)=> d.classList.toggle('active', j===idx)); }
-        set(0); setInterval(()=> set((idx+1)%dots.length), 3800);
-      })();
-
-      // FAB opens/closes chat
-      function openChat(){
-        const modal = gid('chatModal');
-        if (!modal) return;
-        modal.classList.remove('hidden');
-        modal.setAttribute('aria-hidden','false');
-        setTimeout(() => {
-          if (typeof window.VALEO_ON_OPEN === 'function') { try { window.VALEO_ON_OPEN(); return; } catch(e){} }
-          const startBtn = gid('start'); if (startBtn) startBtn.click();
-        }, 50);
-      }
-      function closeChat(){
-        const modal = gid('chatModal');
-        if (!modal) return;
-        modal.classList.add('hidden');
-        modal.setAttribute('aria-hidden','true');
-        const stopBtn = gid('stop'); if (stopBtn) stopBtn.click();
-      }
-
-      window.addEventListener('DOMContentLoaded', function(){
-        const btn = document.getElementById('manageProfile');
-        const closeBtn = document.getElementById('closeProfile');
-        const cancelBtn = document.getElementById('pf-cancel');
-        const saveBtn = document.getElementById('pf-save');
-        if (btn) btn.onclick = openProfile;
-        if (closeBtn) closeBtn.onclick = closeProfile;
-        if (cancelBtn) cancelBtn.onclick = closeProfile;
-        if (saveBtn) saveBtn.onclick = saveProfile;
-
-        const fab = document.getElementById('fab');
-        const closeChatBtn = document.getElementById('closeChat');
-        if (fab) fab.onclick = openChat;
-        if (closeChatBtn) closeChatBtn.onclick = closeChat;
-      });
+      set(0);
+      setInterval(()=> set((idx+1)%dots.length), 3800);
     })();
+
+    // Bind once DOM is ready
+    window.addEventListener('DOMContentLoaded', function(){
+      const fab = $('fab');
+      const closeChatBtn = $('closeChat');
+      if (fab) fab.onclick = openChat;
+      if (closeChatBtn) closeChatBtn.onclick = closeChat;
+
+      const btn = $('manageProfile');
+      const closeBtn = $('closeProfile');
+      const cancelBtn = $('pf-cancel');
+      const saveBtn = $('pf-save');
+      if (btn) btn.onclick = openProfile;
+      if (closeBtn) closeBtn.onclick = closeProfile;
+      if (cancelBtn) cancelBtn.onclick = closeProfile;
+      if (saveBtn) saveBtn.onclick = saveProfile;
+    });
+  })();
   </script>
 </body>
 </html>
