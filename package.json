@@ -4,8 +4,6 @@
   "private": true,
   "type": "commonjs",
   "main": "server.js",
-  "engines": { "node": ">=18.17" },
-  "scripts": {
     "start": "node server.js",
     "dev": "npx vercel dev",
     "deploy": "npx vercel --prod",
@@ -15,8 +13,5 @@
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "multer": "^1.4.5-lts.1",
-    "uuid": "^9.0.1"
   }
 }
