@@ -366,6 +366,187 @@
 
   <script src="app.js"></script>
 
+  <script>
+    (function(){
+      const $ = id => document.getElementById(id);
+      const state = { opened:false, greeted:false, started:false, timers:[] };
+    
+      function logUI(msg){
+        const el = $('log');
+        if (el) el.textContent += (msg + '\n');
+        console.log(msg);
+      }
+    
+      // --- Ensure prompt select is populated (some app.js requires it) ---
+      async function ensurePromptsLoaded(){
+        const sel = $('prompt');
+        if (!sel) return;
+        if (sel.options.length) return;   // already filled
+        try{
+          const r = await fetch('/api/prompts', { cache: 'no-store' });
+          const j = await r.json();
+          const arr = Array.isArray(j.prompts) && j.prompts.length ? j.prompts : ['default'];
+          arr.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name; opt.textContent = name;
+            sel.appendChild(opt);
+          });
+        }catch(e){
+          // fallback
+          const opt = document.createElement('option');
+          opt.value = 'default'; opt.textContent = 'default';
+          $('prompt').appendChild(opt);
+          logUI('⚠️ Prompts load failed; using "default".');
+        }
+      }
+    
+      // --- Start mic once (debounced) ---
+      function startListeningOnce(){
+        if (state.started) return;
+        state.started = true;
+        // clear any pending fallbacks
+        state.timers.forEach(t => clearTimeout(t));
+        state.timers = [];
+    
+        const startBtn = $('start');
+        if (startBtn){
+          startBtn.disabled = false;    // some UIs keep it disabled
+          startBtn.click();             // trigger app.js handler
+          logUI('🎙️ Mic start triggered (once)');
+          return;
+        }
+        if (typeof window.VALEO_ON_OPEN === 'function'){
+          try { window.VALEO_ON_OPEN(); logUI('🎙️ Started via VALEO_ON_OPEN (once)'); return; } catch(e){}
+        }
+        logUI('⚠️ No start hook found.');
+      }
+    
+      // --- Greeting TTS then start ---
+      async function playGreetingThenStart(){
+        const player = $('player');
+        const greetText = "Hi! I’m your Valeo Assistant. How can I help today?";
+        try{
+          const res = await fetch('/api/tts?text=' + encodeURIComponent(greetText));
+          const data = await res.json();
+          if (!data || !data.audioBase64) throw new Error('No audio from /api/tts');
+          if (player){
+            player.src = `data:${data.audioMime || 'audio/mpeg'};base64,${data.audioBase64}`;
+            player.play().catch(()=>{/* ignore autoplay issues */});
+            // Start ONCE when audio ends; plus a single timeout fallback
+            player.onended = () => startListeningOnce();
+            state.timers.push(setTimeout(startListeningOnce, 3500));
+          }else{
+            startListeningOnce();
+          }
+        }catch(e){
+          logUI('Greeting TTS failed: ' + e.message);
+          startListeningOnce();
+        }
+      }
+    
+      // --- Chat open/close ---
+      async function openChat(){
+        if (state.opened) return; // prevent double-open spam
+        state.opened = true;
+    
+        const modal = $('chatModal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden','false');
+    
+        await ensurePromptsLoaded();
+        playGreetingThenStart();
+      }
+    
+      function closeChat(){
+        const modal = $('chatModal');
+        if (!modal) return;
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden','true');
+        const stop = $('stop'); if (stop) stop.click();
+    
+        // reset flags for next session
+        state.opened = false; state.greeted = false; state.started = false;
+        state.timers.forEach(t => clearTimeout(t));
+        state.timers = [];
+      }
+    
+      // --- Profile modal helpers (unchanged) ---
+      async function fetchProfile(userId){
+        try{ const r = await fetch('/api/profile/' + encodeURIComponent(userId)); return r.ok ? await r.json() : null; }
+        catch{ return null; }
+      }
+      function fillForm(p, userId){
+        $('pf-userId').value = userId || (p && p.id) || ($('userId')?.value?.trim() || 'riya');
+        $('pf-name').value = p?.name || '';
+        $('pf-age').value = p?.age ?? '';
+        $('pf-sex').value = p?.sex || '';
+        $('pf-goals').value = (p?.goals || []).join(', ');
+        $('pf-conditions').value = (p?.conditions || []).join(', ');
+        $('pf-meds').value = (p?.medications || []).join(', ');
+        $('pf-allergies').value = (p?.allergies || []).join(', ');
+        $('pf-symptoms').value = (p?.symptoms || []).join(', ');
+        $('pf-labs').value = JSON.stringify(p?.recent_labs || {}, null, 2);
+      }
+      async function openProfileModal(){
+        const modal = $('profileModal');
+        const userId = ($('userId')?.value || 'riya').trim();
+        const p = await fetchProfile(userId);
+        fillForm(p, userId);
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden','false');
+      }
+      function closeProfileModal(){
+        const modal = $('profileModal');
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden','true');
+      }
+      async function saveProfile(){
+        const data = {
+          id: ($('pf-userId').value.trim() || 'riya'),
+          name: $('pf-name').value.trim(),
+          age: Number($('pf-age').value) || null,
+          sex: $('pf-sex').value.trim() || null,
+          goals: $('pf-goals').value.split(',').map(s=>s.trim()).filter(Boolean),
+          conditions: $('pf-conditions').value.split(',').map(s=>s.trim()).filter(Boolean),
+          medications: $('pf-meds').value.split(',').map(s=>s.trim()).filter(Boolean),
+          allergies: $('pf-allergies').value.split(',').map(s=>s.trim()).filter(Boolean),
+          symptoms: $('pf-symptoms').value.split(',').map(s=>s.trim()).filter(Boolean),
+          recent_labs: {}
+        };
+        try { data.recent_labs = JSON.parse($('pf-labs').value || '{}'); }
+        catch(e){ logUI('Recent Labs JSON is invalid.'); return; }
+        try{
+          const r = await fetch('/api/profile/' + encodeURIComponent(data.id), {
+            method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data)
+          });
+          if(!r.ok){ logUI('Save failed: ' + (await r.text())); return; }
+          const uidEl = $('userId'); if (uidEl) uidEl.value = data.id;
+          logUI('✅ Profile saved for ' + data.id);
+          closeProfileModal();
+        }catch(e){ logUI('Save error: ' + e.message); }
+      }
+    
+      // Bind once DOM is ready
+      window.addEventListener('DOMContentLoaded', function(){
+        const fab = $('fab');
+        const close = $('closeChat');
+        if (fab) fab.onclick = openChat;
+        if (close) close.onclick = closeChat;
+    
+        const btn = $('manageProfile');
+        const closeBtn = $('closeProfile');
+        const cancelBtn = $('pf-cancel');
+        const saveBtn = $('pf-save');
+        if (btn) btn.onclick = openProfileModal;
+        if (closeBtn) closeBtn.onclick = closeProfileModal;
+        if (cancelBtn) cancelBtn.onclick = closeProfileModal;
+        if (saveBtn) saveBtn.onclick = saveProfile;
+      });
+    })();
+    </script>
+    
+
   <!-- Inline: auto-greet (TTS) + start listening on chat open; profile modal helpers -->
   <script>
   (function(){
