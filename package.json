@@ -1,16 +1,20 @@
 {
-  "name": "voice-chatbot",
+  "name": "valeo-voice-bot",
   "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
   "main": "server.js",
+  "engines": { "node": ">=18.17" },
   "scripts": {
     "start": "node server.js",
-    "build": "echo \"No build step configured for this project.\""
+    "build": "node -e \"console.log('No build step for server app')\"",
+    "postinstall": "node -e \"require('fs').mkdirSync('prompts',{recursive:true}); if(!require('fs').existsSync('prompts/default.txt')) require('fs').writeFileSync('prompts/default.txt','You are Valeo Assistant.');\""
   },
   "dependencies": {
     "cors": "^2.8.5",
-    "dotenv": "^16.6.1",
-    "express": "^4.21.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
     "multer": "^1.4.5-lts.1",
-    "node-fetch": "^2.7.0"
+    "uuid": "^9.0.1"
   }
 }
